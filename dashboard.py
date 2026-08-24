@@ -85,6 +85,72 @@ async def api_clear_history(request):
     return JSONResponse({"success": True, "message": "History cleared."})
 
 
+from openapi_spec import get_ai_plugin_manifest, get_openapi_schema
+from server import (
+    run_system_command, write_file, read_file, edit_file, append_file,
+    create_full_project, get_antigravity_agent_report
+)
+
+async def api_ai_plugin(request):
+    """Returns OpenAI Plugin Manifest."""
+    return JSONResponse(get_ai_plugin_manifest(PUBLIC_TUNNEL_URL))
+
+
+async def api_openapi_schema(request):
+    """Returns OpenAPI 3.0 JSON Schema for Custom GPTs and Actions."""
+    return JSONResponse(get_openapi_schema(PUBLIC_TUNNEL_URL))
+
+
+async def api_v1_run_system_command(request):
+    data = await request.json()
+    res = run_system_command(command=data.get("command", ""), working_dir=data.get("working_dir"), source="chatgpt")
+    return JSONResponse({"result": res})
+
+
+async def api_v1_write_file(request):
+    data = await request.json()
+    res = write_file(file_path=data.get("file_path", ""), content=data.get("content", ""), source="chatgpt")
+    return JSONResponse({"result": res})
+
+
+async def api_v1_read_file(request):
+    data = await request.json()
+    res = read_file(file_path=data.get("file_path", ""), source="chatgpt")
+    return JSONResponse({"content": res})
+
+
+async def api_v1_create_full_project(request):
+    data = await request.json()
+    res = create_full_project(
+        project_name=data.get("project_name", ""),
+        files=data.get("files", {}),
+        setup_commands=data.get("setup_commands"),
+        source="chatgpt"
+    )
+    return JSONResponse({"report": res})
+
+
+async def api_v1_send_spark_to_antigravity_task(request):
+    data = await request.json()
+    res = send_spark_to_antigravity_task(
+        objective=data.get("objective", ""),
+        context=data.get("context"),
+        required_actions=data.get("required_actions"),
+        source="chatgpt"
+    )
+    return JSONResponse({"result": res})
+
+
+async def api_v1_get_antigravity_agent_report(request):
+    res = get_antigravity_agent_report(source="chatgpt")
+    return JSONResponse({"report": res})
+
+
+async def api_v1_list_antigravity_conversations(request):
+    res = list_antigravity_conversations()
+    return JSONResponse({"conversations": res})
+
+
 # ─── HTML Dashboard Template ─────────────────────────────────────────────────
 
 DASHBOARD_HTML = """<!DOCTYPE html>
@@ -559,7 +625,7 @@ async def dashboard_page(request):
     return HTMLResponse(DASHBOARD_HTML)
 
 
-# ─── Dashboard Routes ────────────────────────────────────────────────────────
+# ─── Dashboard & ChatGPT Actions Routes ──────────────────────────────────────
 
 DASHBOARD_ROUTES = [
     Route("/dashboard", dashboard_page, methods=["GET"]),
@@ -568,4 +634,15 @@ DASHBOARD_ROUTES = [
     Route("/api/conversations", api_conversations, methods=["GET"]),
     Route("/api/inject", api_inject, methods=["POST"]),
     Route("/api/clear-history", api_clear_history, methods=["POST"]),
+    # ChatGPT Actions & Plugins Discovery
+    Route("/.well-known/ai-plugin.json", api_ai_plugin, methods=["GET", "OPTIONS"]),
+    Route("/openapi.json", api_openapi_schema, methods=["GET", "OPTIONS"]),
+    # ChatGPT REST Tool APIs
+    Route("/api/v1/run_system_command", api_v1_run_system_command, methods=["POST", "OPTIONS"]),
+    Route("/api/v1/write_file", api_v1_write_file, methods=["POST", "OPTIONS"]),
+    Route("/api/v1/read_file", api_v1_read_file, methods=["POST", "OPTIONS"]),
+    Route("/api/v1/create_full_project", api_v1_create_full_project, methods=["POST", "OPTIONS"]),
+    Route("/api/v1/send_spark_to_antigravity_task", api_v1_send_spark_to_antigravity_task, methods=["POST", "OPTIONS"]),
+    Route("/api/v1/get_antigravity_agent_report", api_v1_get_antigravity_agent_report, methods=["GET", "OPTIONS"]),
+    Route("/api/v1/list_antigravity_conversations", api_v1_list_antigravity_conversations, methods=["GET", "OPTIONS"]),
 ]

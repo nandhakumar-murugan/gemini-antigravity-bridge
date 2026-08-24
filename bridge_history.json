@@ -349,5 +349,174 @@
       "tag": "project_sync"
     },
     "result_preview": "Note saved: 📁 PROJECT SYNC: **TestApp**\n• Summary: Testing sync tool\n• Tech Stack: Python, FastAPI\n• Key Files: main.py\n• Next Milestone: Active Development"
+  },
+  {
+    "id": "1a38ca34",
+    "timestamp": "2026-08-22 00:59:56",
+    "source": "gemini_spark",
+    "tool": "git_quick_status",
+    "inputs": {
+      "repo_dir": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge"
+    },
+    "result_preview": "=== Git Status: antigravity-mcp-bridge ===\nBranch: main\nLast Commit: 679bcc6 Add build_release.py for 1-click local test verification and native EXE compilation\nChanges:\n  (working tree clean)"
+  },
+  {
+    "id": "bf76231c",
+    "timestamp": "2026-08-22 01:00:15",
+    "source": "gemini_spark",
+    "tool": "read_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\README.md"
+    },
+    "result_preview": "<div align=\"center\">\n\n<!-- HEADER LOGOS -->\n<img src=\"https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg\" width=\"60\" alt=\"Gemini\"/>\n&nbsp;&nbsp;&nbsp;\n<img src=\"https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Google_Cloud_logo.svg/1280px-Google_Cloud_logo.sv..."
+  },
+  {
+    "id": "b617f831",
+    "timestamp": "2026-08-22 01:00:29",
+    "source": "gemini_spark",
+    "tool": "run_system_command",
+    "inputs": {
+      "command": "git status",
+      "working_dir": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge"
+    },
+    "result_preview": "[Exit Code: 0]\n--- STDOUT ---\nOn branch main\nYour branch is up to date with 'origin/main'.\n\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   bridge_history.json\n\nno changes..."
+  },
+  {
+    "id": "bb956d5d",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "batch_write_files",
+    "inputs": {
+      "count": 3,
+      "root": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox"
+    },
+    "result_preview": "[Batch Write Complete] 3/3 files written successfully.\n  ✅ Written: module_a.py (19 bytes)\n  ✅ Written: module_b.py (19 bytes)\n  ✅ Written: sub\\module_c.py (19 bytes)"
+  },
+  {
+    "id": "f1e75214",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "batch_write_files",
+    "inputs": {
+      "count": 2,
+      "root": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\demo_app"
+    },
+    "result_preview": "[Batch Write Complete] 2/2 files written successfully.\n  ✅ Written: app.py (20 bytes)\n  ✅ Written: README.md (10 bytes)"
+  },
+  {
+    "id": "5db3303f",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "run_batch_commands",
+    "inputs": {
+      "commands_count": 1
+    },
+    "result_preview": "=== Running Batch Commands in: C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\demo_app ===\n\n[1/1] Executing: python -c \"print('Setup completed')\"\nStatus: SUCCESS\nSTDOUT:\nSetup completed"
+  },
+  {
+    "id": "e87791f0",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "create_full_project",
+    "inputs": {
+      "project": "demo_app",
+      "files": 2
+    },
+    "result_preview": "=== Project Created: demo_app at C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\demo_app ===\n\n--- Files Written ---\n[Batch Write Complete] 2/2 files written successfully.\n  ✅ Written: app.py (20 bytes)\n  ✅ Written: README.md (10 bytes)\n\n--- Setup & Verification Comman..."
+  },
+  {
+    "id": "eee23ad8",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "write_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt",
+      "content_length": 19
+    },
+    "result_preview": "[Success] File written to C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt (19 bytes)"
+  },
+  {
+    "id": "e3f35cc8",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "read_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt"
+    },
+    "result_preview": "Hello World!\nLine 2"
+  },
+  {
+    "id": "9d3daaef",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "edit_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt",
+      "find_preview": "World"
+    },
+    "result_preview": "[Success] Replaced 1 occurrence of target string in C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt (Remaining matches: 0)"
+  },
+  {
+    "id": "4fbfdc5b",
+    "timestamp": "2026-08-25 01:25:20",
+    "source": "gemini_spark",
+    "tool": "read_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt"
+    },
+    "result_preview": "Hello Gemini!\nLine 2"
+  },
+  {
+    "id": "f812af44",
+    "timestamp": "2026-08-25 01:25:21",
+    "source": "gemini_spark",
+    "tool": "append_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt",
+      "bytes": 7
+    },
+    "result_preview": "[Success] Appended 7 bytes to C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt"
+  },
+  {
+    "id": "e2049902",
+    "timestamp": "2026-08-25 01:25:21",
+    "source": "gemini_spark",
+    "tool": "read_file",
+    "inputs": {
+      "file_path": "C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox\\sample.txt"
+    },
+    "result_preview": "Hello Gemini!\nLine 2\nLine 3"
+  },
+  {
+    "id": "55e06727",
+    "timestamp": "2026-08-25 01:25:21",
+    "source": "gemini_spark",
+    "tool": "run_batch_commands",
+    "inputs": {
+      "commands_count": 2
+    },
+    "result_preview": "=== Running Batch Commands in: C:\\Users\\smnk2\\.gemini\\antigravity\\scratch\\antigravity-mcp-bridge\\test_sandbox ===\n\n[1/2] Executing: python -c \"print('Step 1 OK')\"\nStatus: SUCCESS\nSTDOUT:\nStep 1 OK\n\n[2/2] Executing: python -c \"print('Step 2 OK')\"\nStatus: SUCCESS\nSTDOUT:\nStep 2 OK"
+  },
+  {
+    "id": "5389dfd9",
+    "timestamp": "2026-08-25 01:25:21",
+    "source": "gemini_spark",
+    "tool": "save_session_note",
+    "inputs": {
+      "note": "Architecture decision: Use FastAPI",
+      "tag": "decision"
+    },
+    "result_preview": "Note saved: Architecture decision: Use FastAPI"
+  },
+  {
+    "id": "96714438",
+    "timestamp": "2026-08-25 01:25:21",
+    "source": "antigravity",
+    "tool": "save_session_note",
+    "inputs": {
+      "note": "📁 PROJECT SYNC: **TestApp**\n• Summary: Testing sync tool\n• Tech Stack: Python, FastAPI\n• Key Files: main.py\n• Next Milestone: Active Development",
+      "tag": "project_sync"
+    },
+    "result_preview": "Note saved: 📁 PROJECT SYNC: **TestApp**\n• Summary: Testing sync tool\n• Tech Stack: Python, FastAPI\n• Key Files: main.py\n• Next Milestone: Active Development"
   }
 ]
