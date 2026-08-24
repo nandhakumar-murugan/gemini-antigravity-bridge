@@ -1,15 +1,18 @@
 """
-Dual-Transport Launcher & Live Dashboard for Antigravity MCP Bridge
+Dual-Transport Launcher & Live Dashboard for Gemini Antigravity Bridge
 Serves Streamable HTTP (/mcp), SSE (/sse, /messages), and Live Visual Web Dashboard (/dashboard, /)
-on the SAME port (8000) over ngrok and localhost.
+on the SAME port (8000) with automatic Smart Tunneling (ngrok + Cloudflare Tunnel fallback).
 """
 
 import os
+import sys
+import re
+import time
+import subprocess
 import webbrowser
 import threading
 import uvicorn
 from dotenv import load_dotenv
-from pyngrok import ngrok, conf
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -23,11 +26,74 @@ load_dotenv()
 AUTHTOKEN = os.environ.get("NGROK_AUTHTOKEN")
 PORT = 8000
 HOST = "127.0.0.1"
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+tunnel_process = None
+
+
+def start_tunnel():
+    """Starts ngrok tunnel or falls back to Cloudflare Tunnel if ngrok is blocked."""
+    global tunnel_process
+
+    # 1. Try ngrok first
+    if AUTHTOKEN:
+        try:
+            from pyngrok import ngrok, conf
+            conf.get_default().auth_token = AUTHTOKEN
+            ngrok.kill()
+            tunnel = ngrok.connect(PORT, "http", host_header="rewrite")
+            public_url = tunnel.public_url.replace("http://", "https://")
+            set_public_url(public_url)
+            print("=" * 65)
+            print("[INFO] NGROK MCP TUNNEL IS LIVE!")
+            print(f"[DASHBOARD]     : http://127.0.0.1:{PORT}/dashboard")
+            print(f"[GEMINI SPARK]  : {public_url}/mcp")
+            print(f"[ANTIGRAVITY]   : http://127.0.0.1:{PORT}/mcp (or /sse)")
+            print("=" * 65)
+            return public_url
+        except Exception as e:
+            print(f"[WARNING] ngrok failed or blocked by Windows Defender ({e}).")
+            print("[INFO] Automatically falling back to Cloudflare Tunnel (100% Antivirus Immune)...")
+
+    # 2. Fallback to Cloudflare Quick Tunnel (cloudflared.exe)
+    cf_exe = os.path.join(ROOT_DIR, "cloudflared.exe")
+    if not os.path.exists(cf_exe):
+        print("[ERROR] cloudflared.exe not found.")
+        return None
+
+    try:
+        tunnel_process = subprocess.Popen(
+            [cf_exe, "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace"
+        )
+
+        public_url = None
+        for _ in range(25):
+            line = tunnel_process.stderr.readline()
+            match = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", line)
+            if match:
+                public_url = match.group(0)
+                set_public_url(public_url)
+                print("=" * 65)
+                print("[INFO] CLOUDFLARE MCP TUNNEL IS LIVE!")
+                print(f"[DASHBOARD]     : http://127.0.0.1:{PORT}/dashboard")
+                print(f"[GEMINI SPARK]  : {public_url}/mcp")
+                print(f"[ANTIGRAVITY]   : http://127.0.0.1:{PORT}/mcp (or /sse)")
+                print("=" * 65)
+                return public_url
+            time.sleep(0.4)
+
+    except Exception as e:
+        print(f"[ERROR] Cloudflare tunnel failed: {e}")
+
+    return None
 
 
 async def root_handler(request):
-    # If GET, redirect to visual web dashboard
-    # If POST (MCP client sending to root), forward to Streamable HTTP handler
     if request.method == "GET":
         return RedirectResponse(url="/dashboard")
 
@@ -37,11 +103,6 @@ def create_app() -> Starlette:
     app_streamable = mcp.streamable_http_app()
     streamable_endpoint = app_streamable.routes[0].endpoint
 
-    # Universal routes:
-    # 1. /mcp -> Streamable HTTP (Gemini Spark & Antigravity IDE)
-    # 2. /sse -> GET: SSE stream, POST: Streamable HTTP fallback (handles all clients)
-    # 3. /messages -> SSE message transport
-    # 4. /dashboard & /api/* -> Web Control Center
     combined_routes = [
         Route("/mcp", streamable_endpoint, methods=["POST", "GET", "OPTIONS"]),
         Route("/sse", streamable_endpoint, methods=["POST"]),
@@ -67,31 +128,13 @@ def create_app() -> Starlette:
 
 
 def open_browser_delayed():
-    import time
     time.sleep(1.5)
     webbrowser.open(f"http://127.0.0.1:{PORT}/dashboard")
 
 
 def main(open_browser: bool = False):
-    if not AUTHTOKEN:
-        print("[WARNING] NGROK_AUTHTOKEN not set in environment or .env.")
-    else:
-        conf.get_default().auth_token = AUTHTOKEN
-
-    print("[1/2] Connecting ngrok tunnel with host_header rewrite...")
-    try:
-        ngrok.kill()
-        tunnel = ngrok.connect(PORT, "http", host_header="rewrite")
-        public_url = tunnel.public_url.replace("http://", "https://")
-        set_public_url(public_url)
-        print("=" * 65)
-        print("[INFO] DUAL-TRANSPORT NGROK MCP TUNNEL IS LIVE!")
-        print(f"[DASHBOARD]     : http://127.0.0.1:{PORT}/dashboard")
-        print(f"[GEMINI SPARK]  : {public_url}/mcp")
-        print(f"[ANTIGRAVITY]   : http://127.0.0.1:{PORT}/mcp (or /sse)")
-        print("=" * 65)
-    except Exception as e:
-        print(f"[ERROR] ngrok tunnel error: {e}")
+    print("[1/2] Initializing Smart Public HTTPS Tunnel (ngrok / Cloudflare)...")
+    threading.Thread(target=start_tunnel, daemon=True).start()
 
     app = create_app()
 
@@ -106,6 +149,5 @@ def main(open_browser: bool = False):
 
 
 if __name__ == "__main__":
-    import sys
     should_open = "--open" in sys.argv or "-o" in sys.argv
     main(open_browser=should_open)
