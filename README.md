@@ -4,6 +4,7 @@
 
 ### The World's First Bidirectional MCP Bridge Between Google Gemini Spark & DeepMind Antigravity
 
+[![PyPI](https://img.shields.io/pypi/v/gemini-antigravity-bridge.svg)](https://pypi.org/project/gemini-antigravity-bridge/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
