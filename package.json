@@ -1,0 +1,27 @@
+{
+  "name": "antigravity-mcp-bridge",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nandhakumar-murugan/gemini-antigravity-bridge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/issues"
+  },
+  "homepage": "https://github.com/nandhakumar-murugan/gemini-antigravity-bridge#readme",
+  "dependencies": {
+    "localtunnel": "^2.0.2"
+  }
+}

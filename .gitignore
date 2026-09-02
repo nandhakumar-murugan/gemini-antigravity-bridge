@@ -11,3 +11,5 @@ venv/
 build/
 dist/
 *.spec
+node_modules/
+

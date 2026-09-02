@@ -613,23 +613,57 @@ def sync_project_to_gemini(
 
 
 @mcp.tool()
-def request_gemini_brainstorm(
-    topic: str,
-    query: str,
+def request_spark_connected_app_action(
+    app: str,
+    action: str,
+    details: str,
     context: Optional[str] = None,
     source: Optional[str] = None,
 ) -> str:
     """
-    Called by Antigravity to post a question or research request for Gemini Spark
-    (e.g. asking Spark to review architecture, search web docs, or check Google Workspace data).
+    Dispatches a task from Antigravity to Gemini Spark requesting execution via
+    Spark's connected apps (e.g. @Canva, @Google Drive, @Google Docs, @Google Keep, @YouTube, @Gmail, @Dropbox).
+    Spark will read this request on sync and execute the tool action in the Google ecosystem.
     """
+    valid_apps = [
+        "Canva", "Google Drive", "Google Docs", "Google Keep", "YouTube",
+        "Gmail", "Google Photos", "Gemini Notebook", "Dropbox", "Zoho Projects", "Wix"
+    ]
+    formatted_app = app.strip().title() if not app.startswith("@") else app[1:].strip().title()
+    
     note_content = (
-        f"❓ BRAINSTORM REQUEST FOR GEMINI SPARK: **{topic}**\n"
-        f"• Question/Goal: {query}\n"
-        f"• Local Context: {context if context else 'None provided'}"
+        f"⚡ SPARK CONNECTED APP REQUEST: **@{formatted_app}**\n"
+        f"• Action Required: {action}\n"
+        f"• Specifications/Input: {details}\n"
+        f"• Context: {context if context else 'None provided'}\n"
+        f"• Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    save_session_note(note=note_content, tag="gemini_request", source=source or "antigravity")
-    return f"[Success] Brainstorm request '{topic}' logged for Gemini Spark. Spark will review on next sync."
+    save_session_note(note=note_content, tag="spark_app_request", source=source or "antigravity")
+    return f"[Success] Task queued for Spark @{formatted_app}: '{action}'. Spark will process on next sync/schedule."
+
+
+@mcp.tool()
+def get_spark_connected_apps_catalog() -> str:
+    """
+    Returns the complete list and capabilities of external tools & Google Workspace apps
+    connected to Gemini Spark that Antigravity can orchestrate.
+    """
+    catalog = """=== 🌐 Gemini Spark Connected Apps & Ecosystem Catalog ===
+1. 🎨 @Canva: Poster design, infographics, slide decks, social graphics.
+2. 📁 @Google Drive: Cloud file search, folder management, large asset sync.
+3. 📝 @Google Docs: Academic reports, collaborative documentation, assignment drafts.
+4. 📌 @Google Keep: Flashcards, quick study notes, pinned checklists.
+5. 🎥 @YouTube: Video search, lecture transcript extraction, tutorial summaries.
+6. 📬 @Gmail: Full email reading, URL extraction, notification monitoring.
+7. 📓 @Gemini Notebook: Dedicated deep research and multi-project synthesis.
+8. 📦 @Dropbox: Cloud storage sync via remote MCP server.
+9. 👥 @Contacts: Campus, student, and team directory queries.
+10. 💼 @Zoho (Projects/CRM): Task tracking, project sprints, team coordination.
+11. ⚡ @Gemini Antigravity Bridge: Bidirectional local machine execution & IDE orchestration.
+"""
+    return catalog
+
+
 
 
 

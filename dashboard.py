@@ -91,35 +91,55 @@ from server import (
     create_full_project, get_antigravity_agent_report
 )
 
+def safe_json(data: dict, status_code: int = 200) -> JSONResponse:
+    return JSONResponse(
+        data,
+        status_code=status_code,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
+            "Access-Control-Allow-Headers": "*",
+            "Content-Type": "application/json; charset=utf-8"
+        }
+    )
+
 async def api_ai_plugin(request):
     """Returns OpenAI Plugin Manifest."""
-    return JSONResponse(get_ai_plugin_manifest(PUBLIC_TUNNEL_URL))
+    return safe_json(get_ai_plugin_manifest(PUBLIC_TUNNEL_URL))
 
 
 async def api_openapi_schema(request):
     """Returns OpenAPI 3.0 JSON Schema for Custom GPTs and Actions."""
-    return JSONResponse(get_openapi_schema(PUBLIC_TUNNEL_URL))
+    return safe_json(get_openapi_schema(PUBLIC_TUNNEL_URL))
 
 
 async def api_v1_run_system_command(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     data = await request.json()
     res = run_system_command(command=data.get("command", ""), working_dir=data.get("working_dir"), source="chatgpt")
-    return JSONResponse({"result": res})
+    return safe_json({"result": str(res)})
 
 
 async def api_v1_write_file(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     data = await request.json()
     res = write_file(file_path=data.get("file_path", ""), content=data.get("content", ""), source="chatgpt")
-    return JSONResponse({"result": res})
+    return safe_json({"result": str(res)})
 
 
 async def api_v1_read_file(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     data = await request.json()
     res = read_file(file_path=data.get("file_path", ""), source="chatgpt")
-    return JSONResponse({"content": res})
+    return safe_json({"content": str(res)})
 
 
 async def api_v1_create_full_project(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     data = await request.json()
     res = create_full_project(
         project_name=data.get("project_name", ""),
@@ -127,10 +147,12 @@ async def api_v1_create_full_project(request):
         setup_commands=data.get("setup_commands"),
         source="chatgpt"
     )
-    return JSONResponse({"report": res})
+    return safe_json({"report": str(res)})
 
 
 async def api_v1_send_spark_to_antigravity_task(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     data = await request.json()
     res = send_spark_to_antigravity_task(
         objective=data.get("objective", ""),
@@ -138,17 +160,22 @@ async def api_v1_send_spark_to_antigravity_task(request):
         required_actions=data.get("required_actions"),
         source="chatgpt"
     )
-    return JSONResponse({"result": res})
+    return safe_json({"result": str(res)})
 
 
 async def api_v1_get_antigravity_agent_report(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     res = get_antigravity_agent_report(source="chatgpt")
-    return JSONResponse({"report": res})
+    return safe_json({"report": str(res)})
 
 
 async def api_v1_list_antigravity_conversations(request):
+    if request.method == "OPTIONS":
+        return safe_json({})
     res = list_antigravity_conversations()
-    return JSONResponse({"conversations": res})
+    return safe_json({"conversations": str(res)})
+
 
 
 # ─── HTML Dashboard Template ─────────────────────────────────────────────────

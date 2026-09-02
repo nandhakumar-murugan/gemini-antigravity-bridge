@@ -1,624 +1,288 @@
 <div align="center">
 
-<!-- HEADER LOGOS -->
-<img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" width="60" alt="Gemini"/>
-&nbsp;&nbsp;&nbsp;
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Google_Cloud_logo.svg/1280px-Google_Cloud_logo.svg.png" width="140" alt="Google Cloud"/>
-&nbsp;&nbsp;&nbsp;
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/115px-Python-logo-notext.svg.png" width="50" alt="Python"/>
-
 # ⚡ Gemini Antigravity Bridge
 
-### *The Open-Source Bridge Connecting Google Gemini & Cloud AI to Your Local Machine via the Model Context Protocol*
+### The World's First Bidirectional MCP Bridge Between Google Gemini Spark & DeepMind Antigravity
 
-<!-- BADGES -->
-[![Model Context Protocol](https://img.shields.io/badge/Model%20Context%20Protocol-MCP%202.0-4285F4?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=&logoColor=white)](https://modelcontextprotocol.io)
-[![Gemini Spark](https://img.shields.io/badge/Google%20Gemini-Spark%20Connected-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://gemini.google.com)
-[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Integrated-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![ngrok](https://img.shields.io/badge/Tunnel-ngrok-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)](https://ngrok.com)
-[![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/nandhakumar-murugan/gemini-antigravity-bridge/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI%20Build)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/actions)
-[![GitHub Stars](https://img.shields.io/github/stars/nandhakumar-murugan/gemini-antigravity-bridge?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/stargazers)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
+[![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-6%20Passing-brightgreen.svg)](tests/)
+[![Google Gemini](https://img.shields.io/badge/Google-Gemini_Spark-4285F4?logo=google&logoColor=white)](https://gemini.google.com)
+[![DeepMind](https://img.shields.io/badge/DeepMind-Antigravity-000000?logo=google&logoColor=white)](https://deepmind.google)
 
----
+**Connect Google's cloud AI (Gemini Spark) to your local agentic IDE (Antigravity) with 23 powerful MCP tools — enabling autonomous task dispatch, shared memory, file operations, and cross-agent orchestration.**
 
-> **Verified Proof of Concept**: A single Gemini Spark prompt — *"Create a calculator with unit tests"* — produced, ran, and committed working Python code to GitHub in under 3 seconds. Zero human copy-pasting.
-
-[Architecture](#-system-architecture) • [Tools API](#-complete-tools-reference) • [Quickstart](#-quickstart) • [Google Ecosystem](#-google-ecosystem-integration) • [Developer Docs](#-developer-integration-guide) • [Resources & Links](#-official-documentation--external-resources) • [Benefits](#-who-benefits)
+[Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-23) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
 
 </div>
 
 ---
 
-## 🧩 What Is This Project?
+## 🌐 What Is This?
 
-**Gemini Antigravity Bridge** breaks the barrier between Cloud AI and your local machine. It runs a local **Model Context Protocol (MCP)** server that exposes your entire operating system — terminal, files, compilers, and Git — to any MCP-compatible AI orchestrator over a secure HTTPS tunnel.
+**Gemini Antigravity Bridge** is an MCP (Model Context Protocol) server that creates a **persistent, bidirectional communication channel** between:
 
-Connect it to **Google Gemini Spark** and you get a fully autonomous AI Software Engineer that can plan, code, test, fix, and ship software directly on your disk.
+- ☁️ **Google Gemini Spark** (cloud-based AI assistant with Google Workspace access)
+- 💻 **Google DeepMind Antigravity** (local agentic IDE with full system access)
 
----
-
-## 🏗️ System Architecture
+This enables a **fully autonomous loop** where Spark can dispatch coding tasks to your local machine, and Antigravity can request cloud intelligence back from Spark — all through a standardized, secure protocol.
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                🌐  GOOGLE CLOUD ECOSYSTEM                          │
-│                                                                    │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐  │
-│  │  Gemini Spark   │  │  Google Workspace │  │  Vertex AI /    │  │
-│  │  (Orchestrator) │  │  Docs/Drive/Gmail │  │  Cloud Run      │  │
-│  └────────┬────────┘  └──────────────────┘  └─────────────────┘  │
-└───────────┼────────────────────────────────────────────────────────┘
-            │  JSON-RPC 2.0 (Streamable HTTP / SSE)
-            │  HTTPS via ngrok / Cloudflare Tunnel
-┌───────────▼────────────────────────────────────────────────────────┐
-│          ⚡  ANTIGRAVITY MCP BRIDGE  (Your Machine)                │
-│                                                                    │
-│   /mcp  (Streamable HTTP)    /sse  (Server-Sent Events)           │
-│   CORS · Authentication · 7 Registered MCP Tools                  │
-│                                                                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
-│  │  File System │  │   Terminal   │  │  Antigravity Subagents   │ │
-│  │  Read/Write  │  │  Shell/CMD   │  │  (Autonomous Tasks)      │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────────┘ │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
-│  │   Python     │  │  Node.js/npm │  │   Git / Docker / CI      │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────┘
-```
-
-### Transport Protocol
-
-| Endpoint | Protocol | Best For |
-|:---|:---|:---|
-| `/mcp` | Streamable HTTP (MCP 2.0) | Google Gemini Spark, Vertex AI, all modern MCP clients |
-| `/sse` | Server-Sent Events (SSE) | Legacy MCP clients, custom integrations |
-| `/messages` | HTTP POST | Posting messages in SSE sessions |
-
----
-
-## 🧰 Complete Tools Reference
-
-### 🔧 Tool 1: `run_system_command`
-Execute any shell, PowerShell or Bash command. Captures exit code, stdout, stderr.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `command` | string | ✅ | Full shell command to execute |
-| `working_dir` | string | ❌ | Working directory path (defaults to CWD) |
-
-```json
-// Example: Run Python unit tests
-{
-  "name": "run_system_command",
-  "arguments": {
-    "command": "python -m pytest tests/ -v",
-    "working_dir": "C:/Users/dev/myproject"
-  }
-}
-```
-**Use for:** Running Python/Node/Java/Rust, pip install, npm install, git operations, test runners, Docker, CI pipelines.
-
----
-
-### 📝 Tool 2: `write_file`
-Create or overwrite any file on disk with AI-generated content. Auto-creates directories.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `file_path` | string | ✅ | Absolute or relative file path |
-| `content` | string | ✅ | Full content to write |
-
-```json
-// Example: Write a FastAPI route
-{
-  "name": "write_file",
-  "arguments": {
-    "file_path": "src/api/routes.py",
-    "content": "from fastapi import APIRouter\nrouter = APIRouter()\n\n@router.get('/health')\ndef health(): return {'status': 'ok'}"
-  }
-}
-```
-**Use for:** Writing source code, configs, Dockerfiles, GitHub Actions YAML, Markdown docs, .env files.
-
----
-
-### 📖 Tool 3: `read_file`
-Read and return the full content of any local file.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `file_path` | string | ✅ | Path to the file |
-
-```json
-{
-  "name": "read_file",
-  "arguments": { "file_path": "src/main.py" }
-}
-```
-**Use for:** Inspecting code before refactoring, reading logs, auditing configs, reading datasets.
-
----
-
-### 📂 Tool 4: `list_directory`
-Enumerate files and directories with type and size.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `directory_path` | string | ❌ | Directory to list (defaults to CWD) |
-
-```json
-{
-  "name": "list_directory",
-  "arguments": { "directory_path": "C:/Users/dev/myproject" }
-}
-```
-**Use for:** Discovering project structure, verifying files were created, auditing repos.
-
----
-
-### 🤖 Tool 5: `run_agent_task`
-Spawn an autonomous long-running **Antigravity AI subagent** for complex multi-step goals. Returns instantly with a `task_id`.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `prompt` | string | ✅ | High-level natural language objective |
-| `workspace_dir` | string | ❌ | Directory for the agent to operate in |
-
-```json
-{
-  "name": "run_agent_task",
-  "arguments": {
-    "prompt": "Refactor all Python files to use async/await. Run tests after each file.",
-    "workspace_dir": "C:/Users/dev/myproject"
-  }
-}
-```
-**Use for:** Large-scale refactoring, full feature development, autonomous TDD, security audits.
-
----
-
-### 📊 Tool 6: `get_agent_status`
-Poll the live progress, output, and errors of a background subagent task.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `task_id` | string | ✅ | Task ID from `run_agent_task` |
-
-```json
-{
-  "name": "get_agent_status",
-  "arguments": { "task_id": "a1b2c3d4" }
-}
-// Returns: { "status": "completed", "output": "...", "error": null }
+┌──────────────────────────────────────────────────────────────────┐
+│                    GEMINI SPARK (Google Cloud)                    │
+│  📬 Gmail │ 📁 Drive │ 📅 Calendar │ 🎨 Canva │ 🎥 YouTube     │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │ MCP over HTTPS
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│              ⚡ GEMINI ANTIGRAVITY BRIDGE (MCP Server)            │
+│                                                                  │
+│  🔧 System Commands    📂 File Operations    🤖 Agent Dispatch   │
+│  🧠 Shared Memory      🔄 Project Sync       📊 Status Reports  │
+│                                                                  │
+│  Tunnel: ngrok / Cloudflare (permanent HTTPS domain)             │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │ Local MCP + Message Injection
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│             ANTIGRAVITY IDE (Local Machine)                       │
+│  🖥️ Terminal │ 📝 Code Editor │ 🌳 Git │ 🧪 Tests │ 🚀 Deploy  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 📦 Tool 8: `create_full_project` (1-Click Composite)
-Creates an entire project directory, writes all code files, and executes initial setup/test commands in a **single tool call with 1 permission confirmation**.
+## 🏆 Why This Bridge?
 
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `project_name` | string | ✅ | Folder name of the new project |
-| `files` | object | ✅ | Dictionary of `{"filename": "content"}` |
-| `setup_commands` | array | ❌ | List of shell commands to run after creation |
-
----
-
-### ⚡ Tool 9: `batch_write_files` (Composite)
-Writes or updates multiple files at once in a single dictionary mapping. Reduces permission prompts from N to 1.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `files` | object | ✅ | `{"src/app.py": "...", "tests/test.py": "..."}` |
-| `base_dir` | string | ❌ | Root directory for files |
+| Feature | This Project | Other MCP Servers |
+|---|:---:|:---:|
+| Bidirectional Cloud ↔ Local | ✅ | ❌ |
+| Autonomous Agent Task Dispatch | ✅ | ❌ |
+| Cross-Agent Shared Memory | ✅ | ❌ |
+| Antigravity Conversation Injection | ✅ | ❌ |
+| Spark Connected Apps Orchestration | ✅ | ❌ |
+| Google Workspace Integration | ✅ (via Spark) | Partial |
+| Local File System Access | ✅ | Some |
+| System Command Execution | ✅ | Some |
 
 ---
 
-### 💻 Tool 10: `run_batch_commands` (Composite)
-Executes a sequence of shell/PowerShell commands in order within a single tool call.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `commands` | array | ✅ | `["pip install -r requirements.txt", "pytest"]` |
-| `working_dir` | string | ❌ | Target working directory |
-| `stop_on_error` | boolean | ❌ | Halts sequence if a command fails (default: true) |
-
----
-
-### ✏️ Tool 11: `edit_file`
-Performs surgical search-and-replace on existing files without rewriting the entire file.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `file_path` | string | ✅ | Path to file to modify |
-| `find_text` | string | ✅ | Exact string to search for |
-| `replace_text` | string | ✅ | Replacement content |
-
----
-
-### ➕ Tool 12: `append_file`
-Appends content to the end of a file (or creates it if missing).
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `file_path` | string | ✅ | File path |
-| `content` | string | ✅ | Text to append |
-
----
-
-### 💬 Tool 13: `list_antigravity_conversations`
-Lists all active Antigravity conversations and projects with real sidebar titles, message counts, task counts, and conversation IDs.
-
----
-
-### 📨 Tool 14: `inject_message`
-Injects instructions directly into any Antigravity conversation inbox, waking the Antigravity Language Server engine.
-
-| Param | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `conversation_id` | string | ✅ | Target Antigravity conversation UUID |
-| `message` | string | ✅ | Message content |
-| `title` | string | ❌ | Message title notification |
-
----
-
-### 🧠 Tool 15: `get_bridge_history` / `save_session_note`
-Cross-client persistent memory shared between Gemini Spark and Antigravity.
-
----
-
-## 🔗 Google Ecosystem Integration
-
-<table>
-<tr>
-<td width="50%">
-
-### <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" width="20"/> Gemini Spark
-**Connect your bridge to Gemini via Custom Connected Apps.**
-
-- 📖 [Gemini Home](https://gemini.google.com)
-- 📖 [Gemini API Docs](https://ai.google.dev/gemini-api/docs)
-- 📖 [Gemini for Google Workspace](https://workspace.google.com/intl/en/products/gemini/)
-
-</td>
-<td width="50%">
-
-### <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Google_Cloud_logo.svg/100px-Google_Cloud_logo.svg.png" width="80"/> Google Cloud
-**Deploy the bridge to Cloud or integrate with Cloud AI.**
-
-- 📖 [Google Cloud Console](https://console.cloud.google.com)
-- 📖 [Cloud Run Docs](https://cloud.google.com/run/docs)
-- 📖 [Cloud Build Docs](https://cloud.google.com/build/docs)
-
-</td>
-</tr>
-<tr>
-<td>
-
-### <img src="https://www.gstatic.com/images/branding/product/1x/vertex_ai_64dp.png" width="22"/> Vertex AI
-**Enterprise-grade AI orchestration with local execution.**
-
-- 📖 [Vertex AI Docs](https://cloud.google.com/vertex-ai/docs)
-- 📖 [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction)
-- 📖 [Generative AI on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/overview)
-
-</td>
-<td>
-
-### <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" width="22"/> Google Workspace
-**Use Docs, Drive, Gmail as AI context sources.**
-
-- 📖 [Google Workspace APIs](https://developers.google.com/workspace)
-- 📖 [Google Drive API](https://developers.google.com/drive)
-- 📖 [Google Docs API](https://developers.google.com/docs/api)
-
-</td>
-</tr>
-</table>
-
----
-
-## 📚 Official Documentation & External Resources
-
-### 🔵 Model Context Protocol (MCP)
-
-| Resource | Link |
-|:---|:---|
-| 🏠 MCP Official Website | [modelcontextprotocol.io](https://modelcontextprotocol.io) |
-| 📖 MCP Introduction | [modelcontextprotocol.io/introduction](https://modelcontextprotocol.io/introduction) |
-| 📖 MCP Quickstart Guide | [modelcontextprotocol.io/quickstart](https://modelcontextprotocol.io/quickstart) |
-| 📖 MCP Specification | [spec.modelcontextprotocol.io](https://spec.modelcontextprotocol.io) |
-| 🐍 Python MCP SDK (Official) | [github.com/modelcontextprotocol/python-sdk](https://github.com/modelcontextprotocol/python-sdk) |
-| 📦 MCP on PyPI | [pypi.org/project/mcp](https://pypi.org/project/mcp/) |
-| 🐙 MCP GitHub Organization | [github.com/modelcontextprotocol](https://github.com/modelcontextprotocol) |
-| 📖 MCP Transports Reference | [modelcontextprotocol.io/docs/concepts/transports](https://modelcontextprotocol.io/docs/concepts/transports) |
-| 📖 MCP Tools Reference | [modelcontextprotocol.io/docs/concepts/tools](https://modelcontextprotocol.io/docs/concepts/tools) |
-
----
-
-### 🟣 Google Antigravity (AGY)
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Antigravity Home | [antigravity.google](https://antigravity.google) |
-| 📖 Antigravity Docs | [antigravity.google/docs](https://antigravity.google/docs) |
-| 📖 MCP Integration Guide | [antigravity.google/docs/mcp](https://antigravity.google/docs/mcp) |
-| 📖 Skills System | [antigravity.google/docs/skills](https://antigravity.google/docs/skills) |
-| 📖 Python SDK | [antigravity.google/docs/sdk](https://antigravity.google/docs/sdk) |
-| 📖 Hooks & Plugins | [antigravity.google/docs/hooks](https://antigravity.google/docs/hooks) |
-| 📖 Agent Permissions | [antigravity.google/docs/permissions](https://antigravity.google/docs/permissions) |
-| 📖 Changelog | [antigravity.google/changelog](https://antigravity.google/changelog) |
-
----
-
-### 🔵 Google Gemini & AI APIs
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Google Gemini App | [gemini.google.com](https://gemini.google.com) |
-| 📖 Gemini API Documentation | [ai.google.dev/gemini-api/docs](https://ai.google.dev/gemini-api/docs) |
-| 📖 Gemini API Quickstart | [ai.google.dev/gemini-api/docs/quickstart](https://ai.google.dev/gemini-api/docs/quickstart) |
-| 📖 Gemini for Google Workspace | [workspace.google.com/intl/en/products/gemini](https://workspace.google.com/intl/en/products/gemini/) |
-| 📖 Google AI Studio | [aistudio.google.com](https://aistudio.google.com) |
-| 📖 Connected Apps (MCP) Help | [support.google.com/gemini?p=lm_custom_mcp_trust](https://support.google.com/gemini?p=lm_custom_mcp_trust) |
-| 🐙 Google Generative AI GitHub | [github.com/google-gemini](https://github.com/google-gemini) |
-
----
-
-### ☁️ Google Cloud Platform
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Google Cloud Console | [console.cloud.google.com](https://console.cloud.google.com) |
-| 📖 Vertex AI Documentation | [cloud.google.com/vertex-ai/docs](https://cloud.google.com/vertex-ai/docs) |
-| 📖 Cloud Run Documentation | [cloud.google.com/run/docs](https://cloud.google.com/run/docs) |
-| 📖 Cloud Build Documentation | [cloud.google.com/build/docs](https://cloud.google.com/build/docs) |
-| 📖 Google Cloud APIs Explorer | [cloud.google.com/apis](https://cloud.google.com/apis) |
-| 📖 AI & Machine Learning Products | [cloud.google.com/products/ai](https://cloud.google.com/products/ai) |
-
----
-
-### 🐍 Python & Core Libraries
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Python Official Website | [python.org](https://python.org) |
-| 📖 Python Docs | [docs.python.org/3](https://docs.python.org/3/) |
-| 📦 PyPI Package Index | [pypi.org](https://pypi.org) |
-| 📖 pip Documentation | [pip.pypa.io/en/stable](https://pip.pypa.io/en/stable/) |
-| 📖 asyncio Documentation | [docs.python.org/3/library/asyncio.html](https://docs.python.org/3/library/asyncio.html) |
-| 📖 subprocess Documentation | [docs.python.org/3/library/subprocess.html](https://docs.python.org/3/library/subprocess.html) |
-
----
-
-### 🌐 Web & ASGI Framework
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Uvicorn (ASGI Server) | [uvicorn.org](https://www.uvicorn.org/) |
-| 📖 Uvicorn Docs | [uvicorn.org/settings](https://www.uvicorn.org/settings/) |
-| 🏠 Starlette Framework | [starlette.io](https://www.starlette.io/) |
-| 📖 Starlette Docs | [starlette.io/applications](https://www.starlette.io/applications/) |
-| 📖 Starlette Routing | [starlette.io/routing](https://www.starlette.io/routing/) |
-| 📖 CORS Middleware | [starlette.io/middleware/#corsmiddleware](https://www.starlette.io/middleware/#corsmiddleware) |
-| 🏠 FastAPI | [fastapi.tiangolo.com](https://fastapi.tiangolo.com) |
-| 📖 FastAPI Docs | [fastapi.tiangolo.com/tutorial](https://fastapi.tiangolo.com/tutorial/) |
-
----
-
-### 🔒 Tunneling & Secure Exposure
-
-| Resource | Link |
-|:---|:---|
-| 🏠 ngrok Official Website | [ngrok.com](https://ngrok.com) |
-| 📖 ngrok Documentation | [ngrok.com/docs](https://ngrok.com/docs) |
-| 📖 ngrok HTTP Tunnels | [ngrok.com/docs/http](https://ngrok.com/docs/http/) |
-| 📦 pyngrok (Python SDK) | [pypi.org/project/pyngrok](https://pypi.org/project/pyngrok/) |
-| 📖 pyngrok Docs | [pyngrok.readthedocs.io](https://pyngrok.readthedocs.io/en/latest/) |
-| 🏠 Cloudflare Tunnel | [cloudflare.com/products/tunnel](https://www.cloudflare.com/products/tunnel/) |
-| 📖 Cloudflare Tunnel Docs | [developers.cloudflare.com/cloudflare-one/connections/connect-networks](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) |
-
----
-
-### 📡 JSON-RPC & SSE Specifications
-
-| Resource | Link |
-|:---|:---|
-| 📖 JSON-RPC 2.0 Specification | [jsonrpc.org/specification](https://www.jsonrpc.org/specification) |
-| 📖 Server-Sent Events (SSE) — MDN | [developer.mozilla.org/en-US/docs/Web/API/Server-sent_events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) |
-| 📖 HTTP Status Codes — MDN | [developer.mozilla.org/en-US/docs/Web/HTTP/Status](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) |
-
----
-
-### 🔧 Development Tools
-
-| Resource | Link |
-|:---|:---|
-| 🏠 Git | [git-scm.com](https://git-scm.com) |
-| 📖 Git Documentation | [git-scm.com/doc](https://git-scm.com/doc) |
-| 🏠 GitHub | [github.com](https://github.com) |
-| 📖 GitHub CLI (gh) | [cli.github.com](https://cli.github.com) |
-| 🏠 Python IDLE | [docs.python.org/3/library/idle.html](https://docs.python.org/3/library/idle.html) |
-| 📖 pytest Testing Framework | [docs.pytest.org](https://docs.pytest.org) |
-| 📖 unittest (Built-in) | [docs.python.org/3/library/unittest.html](https://docs.python.org/3/library/unittest.html) |
-
----
-
-## 🚀 Quickstart
+## 🚀 Quick Start
 
 ### Prerequisites
-[![Python](https://img.shields.io/badge/Python%203.10%2B-Download-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![ngrok](https://img.shields.io/badge/ngrok-Free%20Signup-1F1E37?style=flat-square&logo=ngrok&logoColor=white)](https://dashboard.ngrok.com/signup)
-[![Git](https://img.shields.io/badge/Git-Download-F05032?style=flat-square&logo=git&logoColor=white)](https://git-scm.com/downloads)
+- Python 3.10+
+- [ngrok account](https://ngrok.com) (free tier) with a reserved domain
+- Google Gemini Spark (Advanced/Ultra subscription)
+- Google DeepMind Antigravity IDE
 
-### Step 1 — Clone & Install
+### Installation
+
 ```bash
-git clone https://github.com/nandhakumar-murugan/antigravity-mcp-bridge.git
-cd antigravity-mcp-bridge
+# Clone the repository
+git clone https://github.com/nandhakumar-murugan/gemini-antigravity-bridge.git
+cd gemini-antigravity-bridge
+
+# Install dependencies or install package directly
 pip install -r requirements.txt
+# OR install as a CLI tool:
+pip install -e .
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your NGROK_AUTHTOKEN and NGROK_DOMAIN
+
+# Launch the bridge (via script or CLI)
+gemini-bridge
+# or: python run_with_tunnel.py
 ```
 
-### Step 2 — Add Your ngrok Token
-Get your token at [dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
+### Connect to Gemini Spark
 
-Edit `run_with_tunnel.py`:
-```python
-AUTHTOKEN = "your_ngrok_authtoken_here"
+1. Open [Gemini Spark](https://gemini.google.com) → Settings → Connected Apps
+2. Click **"Add a custom app"**
+3. Enter your public MCP URL: `https://your-domain.ngrok-free.dev/mcp`
+4. Spark will discover all 23 tools automatically!
+
+---
+
+## 🛠️ Available Tools (23)
+
+### 🔧 System Execution
+| Tool | Description |
+|---|---|
+| `run_system_command` | Execute any shell/PowerShell command with captured stdout/stderr |
+| `run_batch_commands` | Run multiple commands sequentially with error handling |
+
+### 📂 File Operations
+| Tool | Description |
+|---|---|
+| `read_file` | Read file contents from any path on the local machine |
+| `write_file` | Create or overwrite files with specified content |
+| `edit_file` | Surgically edit specific lines in existing files |
+| `append_file` | Append content to the end of a file |
+| `batch_write_files` | Create multiple files in a single operation |
+| `create_full_project` | Scaffold an entire project directory structure |
+| `list_directory` | List directory contents with metadata |
+
+### 🤖 Agent Orchestration
+| Tool | Description |
+|---|---|
+| `run_agent_task` | Launch an autonomous Antigravity coding subagent |
+| `get_agent_status` | Check status and output of a running agent task |
+| `terminate_task` | Kill a running agent task |
+
+### 🧠 Shared Memory & Sync
+| Tool | Description |
+|---|---|
+| `get_bridge_history` | Retrieve full cross-client operation history |
+| `save_session_note` | Write a structured note to shared memory (tagged) |
+| `get_session_notes` | Read session notes by tag or date range |
+| `sync_project_to_gemini` | Sync project metadata to Spark's knowledge base |
+| `git_quick_status` | Quick Git status check for any repository |
+
+### 🌐 Spark Connected Apps
+| Tool | Description |
+|---|---|
+| `request_spark_connected_app_action` | Dispatch tasks to Spark's connected apps (@Canva, @YouTube, @Gmail, etc.) |
+| `get_spark_connected_apps_catalog` | List all available connected apps and capabilities |
+
+### 🔗 Antigravity Deep Integration
+| Tool | Description |
+|---|---|
+| `list_antigravity_conversations` | List all active Antigravity IDE conversations |
+| `inject_message` | Inject a structured message directly into an Antigravity conversation |
+| `send_spark_to_antigravity_task` | Dispatch a full task brief from Spark to Antigravity |
+| `get_antigravity_agent_report` | Get the latest execution report for Spark to review |
+
+---
+
+## 🔄 Spark Connected Apps
+
+Through the bridge, Antigravity can orchestrate Spark's connected Google & third-party apps:
+
+| App | Capabilities |
+|---|---|
+| 🎨 **@Canva** | Poster design, infographics, slide decks |
+| 📁 **@Google Drive** | Cloud file search, folder management |
+| 📝 **@Google Docs** | Document creation and collaboration |
+| 📌 **@Google Keep** | Quick notes, flashcards, checklists |
+| 🎥 **@YouTube** | Video search, transcript extraction |
+| 📬 **@Gmail** | Email reading, URL extraction |
+| 📓 **@Gemini Notebook** | Deep research and synthesis |
+| 📦 **@Dropbox** | Cloud storage sync via MCP |
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    subgraph Cloud["☁️ Google Cloud"]
+        Spark["Gemini Spark<br/>Consumer AI Assistant"]
+        Gmail["📬 Gmail"]
+        Drive["📁 Google Drive"]
+        Calendar["📅 Google Calendar"]
+        Canva["🎨 Canva"]
+    end
+
+    subgraph Bridge["⚡ Antigravity Bridge"]
+        MCP["MCP Server<br/>(FastMCP + Starlette)"]
+        Tunnel["HTTPS Tunnel<br/>(ngrok / Cloudflare)"]
+        Memory["🧠 Shared Memory<br/>(bridge_history.json)"]
+        Dashboard["📊 Web Dashboard"]
+    end
+
+    subgraph Local["💻 Local Machine"]
+        AGY["Antigravity IDE"]
+        Terminal["🖥️ Terminal"]
+        Git["🌳 Git Repos"]
+        Files["📂 File System"]
+    end
+
+    Spark -->|"MCP over HTTPS"| Tunnel
+    Tunnel --> MCP
+    MCP -->|"inject_message"| AGY
+    MCP -->|"run_system_command"| Terminal
+    MCP -->|"git_quick_status"| Git
+    MCP -->|"read/write_file"| Files
+    MCP --> Memory
+    AGY -->|"save_session_note"| Memory
+    Memory -->|"get_agent_report"| Spark
+    Spark --> Gmail
+    Spark --> Drive
+    Spark --> Calendar
+    Spark --> Canva
 ```
 
-### Step 3 — Launch
+---
+
+## 🚢 Deployment
+
+### Auto-Start on Windows Boot
+The bridge includes a silent startup script that launches automatically when you log in:
+
+```
+📁 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\
+└── GeminiAntigravityBridge.vbs  (silent background launcher)
+```
+
+### Cloud Deployment (24/7 Uptime)
+
 ```bash
-# Windows (Double-click or run):
-start_server.bat
+# Using Docker
+docker build -t gemini-antigravity-bridge .
+docker run -d -p 8000:8000 --env-file .env gemini-antigravity-bridge
 
-# macOS / Linux:
-python run_with_tunnel.py
-```
-
-Output:
-```
-[INFO] NGROK MCP TUNNEL IS LIVE!
-[LINK] PASTE THIS IN GEMINI SPARK: https://xxxx.ngrok-free.dev/mcp
-```
-
-### Step 4 — Connect to Gemini Spark
-1. Open [gemini.google.com](https://gemini.google.com)
-2. Go to **Settings → Custom Connected Apps**
-3. Paste: `https://xxxx.ngrok-free.dev/mcp`
-4. Accept permissions → Click **Save**
-5. Type `@Antigravity System Bridge` in any chat to activate!
-
----
-
-## 💻 Developer Integration Guide
-
-### Python (Official MCP SDK)
-```python
-import asyncio
-from mcp.client.session import ClientSession
-from mcp.client.streamable_http import streamable_http_client
-
-async def main():
-    url = "https://xxxx.ngrok-free.dev/mcp"
-    async with streamable_http_client(url) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            tools = await session.list_tools()
-            print([t.name for t in tools.tools])
-
-            # Run a command
-            result = await session.call_tool("run_system_command", {
-                "command": "python --version"
-            })
-            print(result.content[0].text)
-
-asyncio.run(main())
-```
-
-### cURL (Any Language)
-```bash
-curl -X POST https://xxxx.ngrok-free.dev/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"my-app","version":"1.0"}}}'
-```
-
-### Claude Desktop Config
-```json
-{
-  "mcpServers": {
-    "antigravity-bridge": {
-      "command": "python",
-      "args": ["run_with_tunnel.py"],
-      "env": { "NGROK_AUTHTOKEN": "your_token" }
-    }
-  }
-}
+# Using Render.com / Google Cloud Run
+# Push to GitHub → Connect repo → Deploy automatically
 ```
 
 ---
 
-## 👥 Who Benefits
+## 📋 Scheduled Monitoring
 
-### 🎓 Students
-- See real code written and run on your disk — not in fake sandboxes
-- AI handles `pip install`, virtual environments, and PATH setup for you
-- Learn debugging by watching the AI fix real terminal errors live
+The bridge supports multi-tier automated monitoring via Gemini Spark schedules:
 
-### 💻 Engineers
-- Full autonomous TDD: AI writes code → runs tests → fixes failures → repeats
-- Delegate entire features: *"Build a REST API with auth"* → done in minutes
-- No more copy-pasting between chat and editor
-
-### 🔬 Researchers
-- Run local Python pipelines without uploading sensitive data to the cloud
-- Automate experiment scripts, benchmarks, and data analysis conversationally
-- Use local GPU compute via terminal commands
+| Tier | Cadence | Purpose |
+|---|---|---|
+| 🔴 **Instant Trigger** | Real-time (on email arrival) | Zero-delay alerts for college & NPTEL emails |
+| 🟡 **Hourly Sweep** | Every 60 minutes | Broad monitoring across all platforms |
+| 🟢 **Morning Briefing** | Daily @ 8:00 AM | Strategic daily plan with exam schedules |
 
 ---
 
-## 📁 Project Structure
+## 🤝 Contributing
 
-```
-antigravity-mcp-bridge/
-├── server.py               # Core MCP server with all 7 tool definitions
-├── run_with_tunnel.py      # One-click launcher (server + ngrok tunnel)
-├── start_server.bat        # Windows double-click starter
-├── test_client.py          # MCP connection verification script
-├── calculator.py           # Example: AI-generated code via Gemini Spark
-├── test_calculator.py      # Example: AI-generated tests (all 6 passed)
-├── requirements.txt        # Python dependencies
-├── .gitignore
-├── LICENSE                 # MIT
-└── README.md
-```
+Contributions are welcome! Please read the [Apache 2.0 License](LICENSE) before submitting PRs.
 
----
-
-## 📦 requirements.txt
-
-```
-mcp>=2.0.0
-uvicorn
-fastapi
-pyngrok
-python-dotenv
-```
-
----
-
-## 🛡️ Security
-
-- All traffic is **TLS-encrypted** via ngrok HTTPS
-- ngrok **Authtoken** prevents unauthorized access
-- 180-second **command timeout** on all terminal executions
-- `terminate_task` **immediately halts** any running subagent
-- All operations are **fully visible** in your local terminal
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feat/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feat/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+
+**Nandhakumar Murugan**  
+B.E. Computer Science & Cyber Security | KGiSL Institute of Technology  
+Google Student Ambassador (GID: 36) | Open Source Contributor
+
+[![GitHub](https://img.shields.io/badge/GitHub-nandhakumar--murugan-181717?logo=github)](https://github.com/nandhakumar-murugan)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Nandhakumar_Murugan-0A66C2?logo=linkedin)](https://linkedin.com/in/nandhakumar-murugan)
 
 ---
 
 <div align="center">
 
-### Built with the Google Ecosystem. Powered by Open Standards.
-
-[![Gemini](https://img.shields.io/badge/Google-Gemini-4285F4?style=flat-square&logo=google&logoColor=white)](https://gemini.google.com)
-[![Cloud](https://img.shields.io/badge/Google-Cloud-4285F4?style=flat-square&logo=googlecloud&logoColor=white)](https://cloud.google.com)
-[![MCP](https://img.shields.io/badge/Model%20Context-Protocol-blue?style=flat-square)](https://modelcontextprotocol.io)
-[![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![ngrok](https://img.shields.io/badge/ngrok-1F1E37?style=flat-square&logo=ngrok&logoColor=white)](https://ngrok.com)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/nandhakumar-murugan/antigravity-mcp-bridge)
-
-**⭐ Star this repo** if it helped you! | **🍴 Fork** to customize for your team
-
-[🐛 Report Issues](https://github.com/nandhakumar-murugan/antigravity-mcp-bridge/issues) · [💬 Discussions](https://github.com/nandhakumar-murugan/antigravity-mcp-bridge/discussions) · [🤝 Contribute](https://github.com/nandhakumar-murugan/antigravity-mcp-bridge/pulls)
+**Built with ❤️ using Google Gemini, DeepMind Antigravity & Model Context Protocol**
 
 </div>
