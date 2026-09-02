@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "run_with_tunnel.py"]
+CMD ["python", "server.py", "--transport", "stdio"]

@@ -934,5 +934,13 @@ def get_antigravity_agent_report(
 
 
 if __name__ == "__main__":
-    print("[INFO] Starting Hardened Antigravity MCP Server...")
-    mcp.run(transport="sse")
+    import argparse
+    parser = argparse.ArgumentParser(description="Gemini Antigravity Bridge MCP Server")
+    parser.add_argument("--transport", default="stdio", choices=["stdio", "sse"], help="MCP transport mode")
+    args, _ = parser.parse_known_args()
+    
+    if args.transport == "sse":
+        print("[INFO] Starting Hardened Antigravity MCP Server on SSE...")
+        mcp.run(transport="sse")
+    else:
+        mcp.run(transport="stdio")
