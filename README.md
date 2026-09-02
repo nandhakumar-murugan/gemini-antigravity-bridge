@@ -13,8 +13,9 @@
 [![Tests](https://img.shields.io/badge/Tests-6%20Passing-brightgreen.svg)](tests/)
 [![Google Gemini](https://img.shields.io/badge/Google-Gemini_Spark-4285F4?logo=google&logoColor=white)](https://gemini.google.com)
 [![DeepMind](https://img.shields.io/badge/DeepMind-Antigravity-000000?logo=google&logoColor=white)](https://deepmind.google)
+[![Model Support](https://img.shields.io/badge/Gemini_Model-3.8_%7C_3.7_Flash-EA4335?logo=google&logoColor=white)](https://ai.google.dev/)
 
-**Connect Google's cloud AI (Gemini Spark) to your local agentic IDE (Antigravity) with 23 powerful MCP tools — enabling autonomous task dispatch, shared memory, file operations, and cross-agent orchestration.**
+**Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 23 powerful MCP tools — enabling autonomous task dispatch, shared memory, file operations, and cross-agent orchestration.**
 
 [Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-23) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
 
@@ -26,10 +27,10 @@
 
 **Gemini Antigravity Bridge** is an MCP (Model Context Protocol) server that creates a **persistent, bidirectional communication channel** between:
 
-- ☁️ **Google Gemini Spark** (cloud-based AI assistant with Google Workspace access)
+- ☁️ **Google Gemini Spark** (cloud-based AI assistant with Google Workspace access, powered by Gemini 3.8 / 3.7)
 - 💻 **Google DeepMind Antigravity** (local agentic IDE with full system access)
 
-This enables a **fully autonomous loop** where Spark can dispatch coding tasks to your local machine, and Antigravity can request cloud intelligence back from Spark — all through a standardized, secure protocol.
+Optimized for **Gemini 3.8's next-generation agentic reasoning**, this enables a **fully autonomous loop** where Spark can dispatch coding tasks to your local machine, and Antigravity can request cloud intelligence back from Spark — all through a standardized, secure protocol.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
