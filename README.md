@@ -5,6 +5,8 @@
 ### The World's First Bidirectional MCP Bridge Between Google Gemini Spark & DeepMind Antigravity
 
 [![PyPI](https://img.shields.io/pypi/v/gemini-antigravity-bridge.svg)](https://pypi.org/project/gemini-antigravity-bridge/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259022.svg)](https://doi.org/10.5281/zenodo.22259022)
+[![Glama](https://glama.ai/mcp/servers/nandhakumar-murugan/gemini-antigravity-bridge/badges/score.svg)](https://glama.ai/mcp/servers/nandhakumar-murugan/gemini-antigravity-bridge)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
@@ -268,6 +270,30 @@ Contributions are welcome! Please read the [Apache 2.0 License](LICENSE) before 
 ## 📄 License
 
 This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📚 Research Paper & Academic Citation
+
+This framework implements the formal architecture introduced in the published research paper:
+
+> **AgentShield: A Zero-Trust Runtime Guardrail Architecture for Autonomous Multi-Agent AI Systems with Bidirectional Context Synchronization**  
+> *Nandhakumar Murugan*  
+> Department of Computer Science and Engineering (Cybersecurity), KGiSL Institute of Technology (KiTE), Autonomous  
+> **Permanent DOI**: [10.5281/zenodo.22259022](https://doi.org/10.5281/zenodo.22259022) | **Open Access**: [Zenodo CERN Repository](https://zenodo.org/records/22259022)
+
+If you reference or build upon this architecture in academic or enterprise research, please cite:
+
+```bibtex
+@article{murugan2026agentshield,
+  title={AgentShield: A Zero-Trust Runtime Guardrail Architecture for Autonomous Multi-Agent AI Systems with Bidirectional Context Synchronization},
+  author={Murugan, Nandhakumar},
+  journal={Zenodo},
+  year={2026},
+  doi={10.5281/zenodo.22259022},
+  url={https://doi.org/10.5281/zenodo.22259022}
+}
+```
 
 ---
 
