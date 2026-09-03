@@ -10,6 +10,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
+[![Google AI Developers Forum](https://img.shields.io/badge/Google_AI_Forum-Approved_Showcase-34A853?logo=google&logoColor=white)](https://discuss.ai.google.dev/t/show-tell-gemini-antigravity-bridge-bidirectional-mcp-agent-orchestration-between-gemini-spark-deepmind-antigravity/180640/1)
 [![Tests](https://img.shields.io/badge/Tests-6%20Passing-brightgreen.svg)](tests/)
 [![Google Gemini](https://img.shields.io/badge/Google-Gemini_Spark-4285F4?logo=google&logoColor=white)](https://gemini.google.com)
 [![DeepMind](https://img.shields.io/badge/DeepMind-Antigravity-000000?logo=google&logoColor=white)](https://deepmind.google)

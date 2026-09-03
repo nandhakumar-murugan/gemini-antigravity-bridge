@@ -61,6 +61,7 @@ def start_tunnel():
             local_ngrok = os.path.join(ROOT_DIR, "ngrok.exe")
             if os.path.exists(local_ngrok):
                 conf.get_default().ngrok_path = local_ngrok
+            connect_kwargs = {}
             if DOMAIN:
                 connect_kwargs["domain"] = DOMAIN
             tunnel = ngrok.connect(PORT, "http", **connect_kwargs)
@@ -104,8 +105,27 @@ def start_tunnel():
     return None
 
 
+async def health_handler(request):
+    return JSONResponse({
+        "status": "healthy",
+        "service": "gemini-antigravity-bridge",
+        "mcp_endpoint": "/mcp",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    })
+
+
+async def oauth_resource_handler(request):
+    return JSONResponse({
+        "resource": str(request.url),
+        "authorization_servers": [],
+        "protected": False,
+        "scopes_supported": []
+    })
+
+
 async def root_handler(request):
-    if request.method == "GET":
+    if request.method in ["GET", "HEAD"]:
         return RedirectResponse(url="/dashboard")
 
 
@@ -159,17 +179,33 @@ async def webhook_handler(request):
     })
 
 
+async def head_mcp_handler(request):
+    from starlette.responses import Response
+    return Response(status_code=200, headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"})
+
+
 def create_app() -> Starlette:
+    from mcp.server.streamable_http_manager import TransportSecuritySettings
+    sec_settings = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False,
+        allowed_hosts=["*"],
+        allowed_origins=["*"]
+    )
     app_sse = mcp.sse_app()
-    app_streamable = mcp.streamable_http_app()
+    app_streamable = mcp.streamable_http_app(transport_security=sec_settings)
     streamable_endpoint = app_streamable.routes[0].endpoint
 
     combined_routes = [
+        Route("/health", health_handler, methods=["GET", "HEAD", "OPTIONS"]),
+        Route("/.well-known/oauth-protected-resource", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
+        Route("/.well-known/oauth-protected-resource/mcp", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
+        Route("/mcp", head_mcp_handler, methods=["HEAD"]),
         Route("/mcp", streamable_endpoint, methods=["POST", "GET", "OPTIONS"]),
+        Route("/sse", head_mcp_handler, methods=["HEAD"]),
         Route("/sse", streamable_endpoint, methods=["POST"]),
         Route("/webhook", webhook_handler, methods=["POST"]),
         Route("/api/webhook", webhook_handler, methods=["POST"]),
-        Route("/", root_handler, methods=["GET"]),
+        Route("/", root_handler, methods=["GET", "HEAD", "OPTIONS"]),
     ] + DASHBOARD_ROUTES + list(app_sse.routes)
 
     combined_middleware = [
