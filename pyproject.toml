@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gemini-antigravity-bridge"
-version = "1.0.0"
+version = "1.0.1"
 description = "Bidirectional Model Context Protocol (MCP) bridge connecting Google Gemini Spark with DeepMind Antigravity"
 readme = "README.md"
 authors = [
     { name = "Nandhakumar Murugan", email = "smnk2006@gmail.com" }
 ]
-license = "Apache-2.0"
+license = { text = "Apache-2.0" }
 keywords = ["mcp", "model-context-protocol", "gemini", "antigravity", "deepmind", "ai-agents", "google-workspace"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -39,9 +39,9 @@ Repository = "https://github.com/nandhakumar-murugan/gemini-antigravity-bridge.g
 Issues = "https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/issues"
 
 [project.scripts]
-gemini-bridge = "run_with_tunnel:main"
-gemini-antigravity-bridge = "run_with_tunnel:main"
+gemini-bridge = "gemini_antigravity_bridge.cli:main"
+gemini-antigravity-bridge = "gemini_antigravity_bridge.cli:main"
 
-[tool.setuptools]
-py-modules = ["server", "dashboard", "run_with_tunnel"]
-
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gemini_antigravity_bridge*"]
