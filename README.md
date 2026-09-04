@@ -15,6 +15,8 @@
 [![Google Gemini](https://img.shields.io/badge/Google-Gemini_Spark-4285F4?logo=google&logoColor=white)](https://gemini.google.com)
 [![DeepMind](https://img.shields.io/badge/DeepMind-Antigravity-000000?logo=google&logoColor=white)](https://deepmind.google)
 [![Model Support](https://img.shields.io/badge/Gemini_Model-3.8_%7C_3.7_Flash-EA4335?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Stars](https://img.shields.io/github/stars/nandhakumar-murugan/gemini-antigravity-bridge?color=gold&logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/stargazers)
+[![Discussions](https://img.shields.io/badge/Discussions-Join_Community-8A2BE2?logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/discussions)
 
 **Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 23 powerful MCP tools — enabling autonomous task dispatch, shared memory, file operations, and cross-agent orchestration.**
 
