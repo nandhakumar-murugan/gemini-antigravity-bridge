@@ -933,7 +933,7 @@ def get_antigravity_agent_report(
     return "\n".join(report)
 
 
-if __name__ == "__main__":
+def main():
     import argparse
     parser = argparse.ArgumentParser(description="Gemini Antigravity Bridge MCP Server")
     parser.add_argument("--transport", default="stdio", choices=["stdio", "sse"], help="MCP transport mode")
@@ -944,3 +944,7 @@ if __name__ == "__main__":
         mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

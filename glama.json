@@ -1,5 +1,19 @@
 {
-  "$schema": "https://glama.ai/schemas/server.json",
-  "name": "gemini-antigravity-bridge",
-  "maintainers": ["nandhakumar-murugan"]
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": [
+    "nandhakumar-murugan"
+  ],
+  "build": {
+    "baseImage": "debian:trixie-slim",
+    "pythonVersion": "3.12",
+    "buildSteps": [
+      "pip install --no-cache-dir -r requirements.txt"
+    ],
+    "cmdArguments": [
+      "mcp-proxy",
+      "--",
+      "python",
+      "server.py"
+    ]
+  }
 }
