@@ -7,6 +7,7 @@
 [![PyPI](https://img.shields.io/pypi/v/gemini-antigravity-bridge.svg)](https://pypi.org/project/gemini-antigravity-bridge/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259022.svg)](https://doi.org/10.5281/zenodo.22259022)
 [![Glama](https://glama.ai/mcp/servers/nandhakumar-murugan/gemini-antigravity-bridge/badges/score.svg)](https://glama.ai/mcp/servers/nandhakumar-murugan/gemini-antigravity-bridge)
+[![Awesome MCP Servers](https://img.shields.io/badge/Awesome-MCP_Servers-brightgreen?logo=awesomelists&logoColor=white)](https://github.com/punkpeye/awesome-mcp-servers#coding-agents)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
