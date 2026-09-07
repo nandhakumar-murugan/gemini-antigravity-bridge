@@ -9,7 +9,7 @@ import psutil
 from datetime import datetime
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
-from server import (
+from .server import (
     _load_history, _save_history, list_antigravity_conversations,
     send_spark_to_antigravity_task, BRAIN_DIR, tasks
 )
@@ -85,8 +85,8 @@ async def api_clear_history(request):
     return JSONResponse({"success": True, "message": "History cleared."})
 
 
-from openapi_spec import get_ai_plugin_manifest, get_openapi_schema
-from server import (
+from .openapi_spec import get_ai_plugin_manifest, get_openapi_schema
+from .server import (
     run_system_command, write_file, read_file, edit_file, append_file,
     create_full_project, get_antigravity_agent_report
 )

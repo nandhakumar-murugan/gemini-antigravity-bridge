@@ -1,9 +1,4 @@
-FROM python:3.11-slim
-
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000 \
-    HOST=0.0.0.0
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -14,4 +9,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "server.py"]
+CMD ["python", "server.py", "--transport", "stdio"]

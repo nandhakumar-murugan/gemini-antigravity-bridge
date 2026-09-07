@@ -1,0 +1,5 @@
+{
+  "$schema": "https://glama.ai/schemas/server.json",
+  "name": "gemini-antigravity-bridge",
+  "maintainers": ["nandhakumar-murugan"]
+}

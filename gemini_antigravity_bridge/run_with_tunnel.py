@@ -19,13 +19,13 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse, JSONResponse
 from starlette.routing import Route
-from server import mcp
-from dashboard import DASHBOARD_ROUTES, set_public_url
+from .server import mcp
+from .dashboard import DASHBOARD_ROUTES, set_public_url
 
 load_dotenv()
 
-AUTHTOKEN = os.environ.get("NGROK_AUTHTOKEN", "36nOKqLSzMkccTe8rmIIsWeoF3n_6SQiDNeFQoB8AvVGLSDHT")
-DOMAIN = os.environ.get("NGROK_DOMAIN", "subfastigiate-censurably-estell.ngrok-free.dev")
+AUTHTOKEN = os.environ.get("NGROK_AUTHTOKEN", "")
+DOMAIN = os.environ.get("NGROK_DOMAIN", "")
 PORT = 8000
 HOST = "0.0.0.0"
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
