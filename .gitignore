@@ -13,3 +13,7 @@ dist/
 *.spec
 node_modules/
 
+
+*.egg-info/
+*.egg
+
