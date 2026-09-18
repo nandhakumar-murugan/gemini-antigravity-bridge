@@ -9,10 +9,16 @@ import psutil
 from datetime import datetime
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
-from server import (
-    _load_history, _save_history, list_antigravity_conversations,
-    send_spark_to_antigravity_task, BRAIN_DIR, tasks
-)
+try:
+    from .server import (
+        _load_history, _save_history, list_antigravity_conversations,
+        send_spark_to_antigravity_task, BRAIN_DIR, tasks, firewall
+    )
+except ImportError:
+    from gemini_antigravity_bridge.server import (
+        _load_history, _save_history, list_antigravity_conversations,
+        send_spark_to_antigravity_task, BRAIN_DIR, tasks, firewall
+    )
 
 PUBLIC_TUNNEL_URL = ""
 
@@ -25,7 +31,7 @@ def set_public_url(url: str):
 # ─── API Handlers ────────────────────────────────────────────────────────────
 
 async def api_status(request):
-    """Returns real-time status of server, connections, and system resources."""
+    """Returns real-time status of server, connections, security, and system resources."""
     cpu_percent = psutil.cpu_percent(interval=None)
     mem = psutil.virtual_memory()
     history = _load_history()
@@ -38,6 +44,13 @@ async def api_status(request):
         "mcp_antigravity_url": "http://127.0.0.1:8000/sse",
         "active_tasks": len(tasks),
         "history_count": len(history),
+        "security": {
+            "status": "active",
+            "engine": "OpenAgentShield Zero-Trust v1.0.0",
+            "doi": "10.5281/zenodo.22259022",
+            "policy": getattr(firewall.policy, "policy_name", "Strict-Production-Guard"),
+            "audited_events": len(getattr(firewall, "audit_log", []))
+        },
         "system": {
             "cpu_percent": cpu_percent,
             "memory_used_mb": round((mem.total - mem.available) / (1024 * 1024)),
@@ -85,11 +98,41 @@ async def api_clear_history(request):
     return JSONResponse({"success": True, "message": "History cleared."})
 
 
-from openapi_spec import get_ai_plugin_manifest, get_openapi_schema
-from server import (
-    run_system_command, write_file, read_file, edit_file, append_file,
-    create_full_project, get_antigravity_agent_report
-)
+async def api_security(request):
+    """Returns OpenAgentShield Zero-Trust security status and recent audit events."""
+    events = getattr(firewall, "audit_log", [])[-50:]
+    serialized = [
+        {
+            "tool": e.tool_name,
+            "verdict": e.verdict.value if hasattr(e.verdict, "value") else str(e.verdict),
+            "risk_score": e.risk_score,
+            "reasons": e.reasons,
+            "timestamp": e.timestamp,
+        }
+        for e in events
+    ]
+    return JSONResponse({
+        "status": "active",
+        "engine": "OpenAgentShield Zero-Trust AI Firewall",
+        "paper_doi": "10.5281/zenodo.22259022",
+        "policy": getattr(firewall.policy, "policy_name", "Strict-Production-Guard"),
+        "total_audited": len(getattr(firewall, "audit_log", [])),
+        "events": list(reversed(serialized))
+    })
+
+
+try:
+    from .openapi_spec import get_ai_plugin_manifest, get_openapi_schema
+    from .server import (
+        run_system_command, write_file, read_file, edit_file, append_file,
+        create_full_project, get_antigravity_agent_report
+    )
+except ImportError:
+    from gemini_antigravity_bridge.openapi_spec import get_ai_plugin_manifest, get_openapi_schema
+    from gemini_antigravity_bridge.server import (
+        run_system_command, write_file, read_file, edit_file, append_file,
+        create_full_project, get_antigravity_agent_report
+    )
 
 def safe_json(data: dict, status_code: int = 200) -> JSONResponse:
     return JSONResponse(
@@ -540,6 +583,23 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         </div>
       </div>
 
+      <!-- OpenAgentShield Zero-Trust Security Card -->
+      <div class="card" style="border-left: 3px solid #10b981;">
+        <div class="card-header">
+          <div class="card-title">🛡️ OpenAgentShield Zero-Trust</div>
+          <span style="font-size: 0.7rem; background: rgba(16,185,129,0.15); color: #10b981; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">ACTIVE</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+          <div><strong>Engine:</strong> OpenAgentShield v1.0.0</div>
+          <div><strong>Published DOI:</strong> <a href="https://doi.org/10.5281/zenodo.22259022" target="_blank" style="color: var(--accent); text-decoration: none;">10.5281/zenodo.22259022</a></div>
+          <div><strong>Policy:</strong> Strict-Production-Guard</div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+            <span style="background: rgba(59,130,246,0.15); color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">AST Sandboxing</span>
+            <span style="background: rgba(16,185,129,0.15); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Secret Redaction</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Right Column: Live Event Stream -->
@@ -657,6 +717,7 @@ async def dashboard_page(request):
 DASHBOARD_ROUTES = [
     Route("/dashboard", dashboard_page, methods=["GET"]),
     Route("/api/status", api_status, methods=["GET"]),
+    Route("/api/security", api_security, methods=["GET"]),
     Route("/api/history", api_history, methods=["GET"]),
     Route("/api/conversations", api_conversations, methods=["GET"]),
     Route("/api/inject", api_inject, methods=["POST"]),

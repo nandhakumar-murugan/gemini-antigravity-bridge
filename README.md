@@ -12,16 +12,17 @@
 [![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 [![Google AI Developers Forum](https://img.shields.io/badge/Google_AI_Forum-Approved_Showcase-34A853?logo=google&logoColor=white)](https://discuss.ai.google.dev/t/show-tell-gemini-antigravity-bridge-bidirectional-mcp-agent-orchestration-between-gemini-spark-deepmind-antigravity/180640/1)
-[![Tests](https://img.shields.io/badge/Tests-6%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-16%20Passing-brightgreen.svg)](tests/)
+[![Security](https://img.shields.io/badge/Security-OpenAgentShield_Zero--Trust-10B981?logo=shield&logoColor=white)](https://doi.org/10.5281/zenodo.22259022)
 [![Google Gemini](https://img.shields.io/badge/Google-Gemini_Spark-4285F4?logo=google&logoColor=white)](https://gemini.google.com)
 [![DeepMind](https://img.shields.io/badge/DeepMind-Antigravity-000000?logo=google&logoColor=white)](https://deepmind.google)
 [![Model Support](https://img.shields.io/badge/Gemini_Model-3.8_%7C_3.7_Flash-EA4335?logo=google&logoColor=white)](https://ai.google.dev/)
 [![Stars](https://img.shields.io/github/stars/nandhakumar-murugan/gemini-antigravity-bridge?color=gold&logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/stargazers)
 [![Discussions](https://img.shields.io/badge/Discussions-Join_Community-8A2BE2?logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/discussions)
 
-**Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 23 powerful MCP tools — enabling autonomous task dispatch, shared memory, file operations, and cross-agent orchestration.**
+**Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 24 powerful MCP tools, hardened by OpenAgentShield Zero-Trust runtime sandboxing and automatic credential redaction.**
 
-[Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-23) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
+[Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-24) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
 
 </div>
 
@@ -114,22 +115,22 @@ gemini-bridge
 
 ---
 
-## 🛠️ Available Tools (23)
+## 🛠️ Available Tools (24)
 
 ### 🔧 System Execution
 | Tool | Description |
 |---|---|
-| `run_system_command` | Execute any shell/PowerShell command with captured stdout/stderr |
-| `run_batch_commands` | Run multiple commands sequentially with error handling |
+| `run_system_command` | Execute shell/PowerShell command with AST risk analysis and captured output |
+| `run_batch_commands` | Run multiple commands sequentially with error handling and policy validation |
 
 ### 📂 File Operations
 | Tool | Description |
 |---|---|
-| `read_file` | Read file contents from any path on the local machine |
-| `write_file` | Create or overwrite files with specified content |
+| `read_file` | Read file contents with sensitive credential protection |
+| `write_file` | Create or overwrite files with automatic secret redaction |
 | `edit_file` | Surgically edit specific lines in existing files |
 | `append_file` | Append content to the end of a file |
-| `batch_write_files` | Create multiple files in a single operation |
+| `batch_write_files` | Create multiple files in a single operation with policy enforcement |
 | `create_full_project` | Scaffold an entire project directory structure |
 | `list_directory` | List directory contents with metadata |
 
@@ -140,10 +141,15 @@ gemini-bridge
 | `get_agent_status` | Check status and output of a running agent task |
 | `terminate_task` | Kill a running agent task |
 
+### 🛡️ Zero-Trust Security & Telemetry (OpenAgentShield)
+| Tool | Description |
+|---|---|
+| `get_security_audit_log` | Retrieves OpenAgentShield Zero-Trust audit events, blocked attacks, and system risk scores (DOI: 10.5281/zenodo.22259022) |
+
 ### 🧠 Shared Memory & Sync
 | Tool | Description |
 |---|---|
-| `get_bridge_history` | Retrieve full cross-client operation history |
+| `get_bridge_history` | Retrieve full cross-client operation history with redacted credentials |
 | `save_session_note` | Write a structured note to shared memory (tagged) |
 | `get_session_notes` | Read session notes by tag or date range |
 | `sync_project_to_gemini` | Sync project metadata to Spark's knowledge base |

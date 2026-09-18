@@ -28,22 +28,49 @@ BASE_DIR = os.path.abspath(os.getcwd())
 # Persistent history log file — shared between Gemini Spark and Antigravity
 HISTORY_FILE = os.path.join(BASE_DIR, "bridge_history.json")
 
-# Blocked dangerous system command patterns
-BLOCKED_PATTERNS = [
-    "format c:", "rmdir /s /q c:\\", "rmdir /s /q c:/", "del /f /s /q c:\\windows",
-    ":(){ :|:& };:", "dd if=/dev/zero", "mkfs.", "> /dev/sda"
-]
+# ─── OpenAgentShield Zero-Trust Security Gateway ─────────────────────────────
+# Based on research DOI: 10.5281/zenodo.22259022
+try:
+    from .security import (
+        AgentFirewall,
+        SecretSanitizer,
+        ActionVerdict,
+        EvaluationResult,
+        SecurityPolicy,
+    )
+except ImportError:
+    from gemini_antigravity_bridge.security import (
+        AgentFirewall,
+        SecretSanitizer,
+        ActionVerdict,
+        EvaluationResult,
+        SecurityPolicy,
+    )
+
+# Initialize global Zero-Trust Firewall
+firewall = AgentFirewall()
 
 
 # ─── Security & Safety Helpers ────────────────────────────────────────────────
 
 def _is_safe_command(cmd: str) -> tuple[bool, str]:
-    """Check if command contains destructive system commands."""
-    cmd_lower = cmd.lower().strip()
-    for pattern in BLOCKED_PATTERNS:
-        if pattern in cmd_lower:
-            return False, f"Blocked dangerous command pattern: '{pattern}'"
+    """Check if command contains destructive system commands using OpenAgentShield AST rules."""
+    eval_res = firewall.inspect_tool_call("run_command", {"CommandLine": cmd})
+    if eval_res.verdict == ActionVerdict.BLOCK:
+        return False, f"[OpenAgentShield Blocked] (Risk: {eval_res.risk_score}/100) {', '.join(eval_res.reasons)}"
     return True, ""
+
+
+def _is_safe_file_access(file_path: str, tool_name: str = "read_file", content: Optional[str] = None) -> tuple[bool, str, Optional[str]]:
+    """Validates file access against OpenAgentShield policy and redacts sensitive credentials."""
+    args = {"AbsolutePath": file_path}
+    if content:
+        args["CodeContent"] = content
+    eval_res = firewall.inspect_tool_call(tool_name, args)
+    if eval_res.verdict == ActionVerdict.BLOCK:
+        return False, f"[OpenAgentShield Blocked] (Risk: {eval_res.risk_score}/100) {', '.join(eval_res.reasons)}", None
+    sanitized_content = eval_res.sanitized_arguments.get("CodeContent", content)
+    return True, "", sanitized_content
 
 
 def _resolve_safe_path(file_path: str, working_dir: Optional[str] = None) -> str:
@@ -77,13 +104,33 @@ def _save_history(history: List[Dict]):
 
 def _log_action(tool: str, inputs: Dict, result: str, source: str = "gemini_spark"):
     history = _load_history()
+    # Sanitize inputs to prevent credentials leaking into bridge_history.json
+    sanitized_inputs = {}
+    for k, v in inputs.items():
+        if isinstance(v, str):
+            clean_val, _ = SecretSanitizer.scan_and_redact(v)
+            sanitized_inputs[k] = clean_val
+        elif isinstance(v, dict):
+            clean_dict = {}
+            for sub_k, sub_v in v.items():
+                if isinstance(sub_v, str):
+                    clean_sub, _ = SecretSanitizer.scan_and_redact(sub_v)
+                    clean_dict[sub_k] = clean_sub
+                else:
+                    clean_dict[sub_k] = sub_v
+            sanitized_inputs[k] = clean_dict
+        else:
+            sanitized_inputs[k] = v
+
+    clean_result, _ = SecretSanitizer.scan_and_redact(result)
+
     history.append({
         "id": str(uuid.uuid4())[:8],
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "source": source,
         "tool": tool,
-        "inputs": inputs,
-        "result_preview": result[:300] + ("..." if len(result) > 300 else ""),
+        "inputs": sanitized_inputs,
+        "result_preview": clean_result[:300] + ("..." if len(clean_result) > 300 else ""),
     })
     # Keep last 500 entries
     _save_history(history[-500:])
@@ -129,9 +176,13 @@ def run_system_command(
 @mcp.tool()
 def read_file(file_path: str, source: Optional[str] = None) -> str:
     """
-    Reads the content of a file from the local filesystem.
+    Reads the content of a file from the local filesystem with OpenAgentShield validation.
     """
     abs_path = _resolve_safe_path(file_path)
+    is_safe, reason, _ = _is_safe_file_access(abs_path, "read_file")
+    if not is_safe:
+        return f"[Security Blocked] {reason}"
+
     if not os.path.exists(abs_path):
         return f"[Error] File not found: {abs_path}"
     try:
@@ -148,14 +199,20 @@ def write_file(file_path: str, content: str, source: Optional[str] = None) -> st
     """
     Creates or overwrites a file on the local filesystem with specified content.
     Automatically creates parent directories if they don't exist.
+    Enforces OpenAgentShield file safety checks and secret redaction.
     """
     abs_path = _resolve_safe_path(file_path)
+    is_safe, reason, sanitized_content = _is_safe_file_access(abs_path, "write_file", content)
+    if not is_safe:
+        return f"[Security Blocked] {reason}"
+    final_content = sanitized_content if sanitized_content is not None else content
+
     try:
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        result = f"[Success] File written to {abs_path} ({len(content)} bytes)"
-        _log_action("write_file", {"file_path": abs_path, "content_length": len(content)},
+            f.write(final_content)
+        result = f"[Success] File written to {abs_path} ({len(final_content)} bytes)"
+        _log_action("write_file", {"file_path": abs_path, "content_length": len(final_content)},
                     result, source or "gemini_spark")
         return result
     except Exception as e:
@@ -167,8 +224,13 @@ def edit_file(file_path: str, find_text: str, replace_text: str, source: Optiona
     """
     Performs a precise surgical search-and-replace edit in an existing file.
     Avoids having to rewrite the entire file when making targeted code changes.
+    Enforces OpenAgentShield sensitive file access boundaries.
     """
     abs_path = _resolve_safe_path(file_path)
+    is_safe, reason, _ = _is_safe_file_access(abs_path, "write_to_file")
+    if not is_safe:
+        return f"[Security Blocked] {reason}"
+
     if not os.path.exists(abs_path):
         return f"[Error] File not found: {abs_path}"
     try:
@@ -196,14 +258,20 @@ def edit_file(file_path: str, find_text: str, replace_text: str, source: Optiona
 def append_file(file_path: str, content: str, source: Optional[str] = None) -> str:
     """
     Appends text to the end of an existing file (or creates it if it doesn't exist).
+    Enforces OpenAgentShield sensitive file access boundaries.
     """
     abs_path = _resolve_safe_path(file_path)
+    is_safe, reason, sanitized_content = _is_safe_file_access(abs_path, "write_to_file", content)
+    if not is_safe:
+        return f"[Security Blocked] {reason}"
+    final_content = sanitized_content if sanitized_content is not None else content
+
     try:
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, "a", encoding="utf-8") as f:
-            f.write(content)
-        result = f"[Success] Appended {len(content)} bytes to {abs_path}"
-        _log_action("append_file", {"file_path": abs_path, "bytes": len(content)},
+            f.write(final_content)
+        result = f"[Success] Appended {len(final_content)} bytes to {abs_path}"
+        _log_action("append_file", {"file_path": abs_path, "bytes": len(final_content)},
                     result, source or "gemini_spark")
         return result
     except Exception as e:
@@ -216,10 +284,7 @@ def append_file(file_path: str, content: str, source: Optional[str] = None) -> s
 def batch_write_files(files: Dict[str, str], base_dir: Optional[str] = None, source: Optional[str] = None) -> str:
     """
     Creates or updates multiple files in a single tool call.
-    Reduces permission prompts from N to 1.
-    Parameters:
-        files: Dictionary of {"relative/or/abs/filepath": "file_content"}
-        base_dir: Optional root directory (defaults to server CWD)
+    Includes OpenAgentShield security validation for all target paths.
     """
     root = _resolve_safe_path(base_dir if base_dir else BASE_DIR)
     results = []
@@ -227,11 +292,17 @@ def batch_write_files(files: Dict[str, str], base_dir: Optional[str] = None, sou
 
     for rel_path, content in files.items():
         abs_path = os.path.abspath(rel_path if os.path.isabs(rel_path) else os.path.join(root, rel_path))
+        is_safe, reason, sanitized_content = _is_safe_file_access(abs_path, "write_file", content)
+        if not is_safe:
+            results.append(f"  🛡️ Blocked: {rel_path} - {reason}")
+            continue
+        final_content = sanitized_content if sanitized_content is not None else content
+
         try:
             os.makedirs(os.path.dirname(abs_path), exist_ok=True)
             with open(abs_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            results.append(f"  ✅ Written: {os.path.relpath(abs_path, root)} ({len(content)} bytes)")
+                f.write(final_content)
+            results.append(f"  ✅ Written: {os.path.relpath(abs_path, root)} ({len(final_content)} bytes)")
             success_count += 1
         except Exception as e:
             results.append(f"  ❌ Failed: {rel_path} - {str(e)}")
@@ -933,7 +1004,39 @@ def get_antigravity_agent_report(
     return "\n".join(report)
 
 
-if __name__ == "__main__":
+# ─── OpenAgentShield Telemetry Tool ──────────────────────────────────────────
+
+@mcp.tool()
+def get_security_audit_log(limit: Optional[int] = 20, source: Optional[str] = None) -> str:
+    """
+    Retrieves the OpenAgentShield Zero-Trust security audit log and risk telemetry.
+    Shows intercepted, blocked, and redacted tool invocations.
+    Based on research DOI: 10.5281/zenodo.22259022
+    """
+    events = firewall.audit_log[-limit:] if hasattr(firewall, "audit_log") and firewall.audit_log else []
+
+    summary = {
+        "shield_engine": "OpenAgentShield Zero-Trust AI Firewall",
+        "paper_doi": "10.5281/zenodo.22259022",
+        "policy_active": firewall.policy.policy_name,
+        "enforce_secret_redaction": firewall.policy.enforce_secret_redaction,
+        "enforce_shell_sandboxing": firewall.policy.enforce_shell_sandboxing,
+        "total_audited_events": len(firewall.audit_log),
+        "recent_intercepted_events": [
+            {
+                "tool": e.tool_name,
+                "verdict": e.verdict.value if hasattr(e.verdict, "value") else str(e.verdict),
+                "risk_score": e.risk_score,
+                "reasons": e.reasons,
+                "timestamp": e.timestamp,
+            }
+            for e in events
+        ]
+    }
+    return json.dumps(summary, indent=2)
+
+
+def main():
     import argparse
     parser = argparse.ArgumentParser(description="Gemini Antigravity Bridge MCP Server")
     parser.add_argument("--transport", default="stdio", choices=["stdio", "sse"], help="MCP transport mode")
@@ -944,3 +1047,7 @@ if __name__ == "__main__":
         mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()
