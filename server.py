@@ -1070,8 +1070,77 @@ except ImportError:
     )
 
 
+try:
+    from .multimedia import (
+        speak as _speak,
+        read_clipboard as _read_clipboard,
+        copy_to_clipboard as _copy_to_clipboard,
+        show_desktop_notification as _show_desktop_notification,
+    )
+except ImportError:
+    from gemini_antigravity_bridge.multimedia import (
+        speak as _speak,
+        read_clipboard as _read_clipboard,
+        copy_to_clipboard as _copy_to_clipboard,
+        show_desktop_notification as _show_desktop_notification,
+    )
+
+
+@mcp.tool()
+async def speak_to_user(text: str, rate: int = 0) -> str:
+    """
+    🔊 SPEAK OUT LOUD THROUGH LAPTOP SPEAKERS (Windows SAPI5 Voice).
+    Use this whenever you want to audibly alert or speak directly to the user through their laptop speakers
+    (e.g., announcing task completion, warning about an urgent deadline, or talking aloud to the user).
+
+    Args:
+        text: The text to speak aloud through laptop speakers.
+        rate: Speech speed rate (-10 to 10, default 0 = normal speed).
+    """
+    res = _speak(text, rate=rate)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def show_desktop_notification(title: str, message: str) -> str:
+    """
+    🔔 NATIVE WINDOWS DESKTOP NOTIFICATION.
+    Pops up a Windows notification banner in the bottom-right corner of the user's screen with sound.
+
+    Args:
+        title: Notification title (e.g. 'KGiSL Academic Alert' or 'Gemini Antigravity').
+        message: Notification message content.
+    """
+    res = _show_desktop_notification(title=title, message=message)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def read_clipboard() -> str:
+    """
+    📋 READ WINDOWS CLIPBOARD.
+    Reads the text currently stored in the user's Windows clipboard.
+    """
+    res = _read_clipboard()
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def copy_to_clipboard(text: str) -> str:
+    """
+    📋 COPY TO WINDOWS CLIPBOARD.
+    Copies text or code directly to the user's Windows clipboard so they can press Ctrl+V to paste it anywhere.
+
+    Args:
+        text: The text or code to copy.
+    """
+    res = _copy_to_clipboard(text)
+    return json.dumps(res)
+
+
 @mcp.tool()
 async def inspect_desktop_overview(include_screenshot: bool = True) -> str:
+
     """
     🖥️ UNIFIED DESKTOP & SCREEN INSPECTOR (Astra Computer Vision).
     Use this tool whenever the user naturally asks about their computer, what is on screen,
@@ -1101,7 +1170,9 @@ async def perform_computer_task(
     launch_command: Optional[str] = None,
     gui_steps: Optional[list[dict]] = None,
     verify_screen: bool = True,
+    speak_announcement: Optional[str] = None,
 ) -> str:
+
     """
     🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK!
     Whenever the user asks you in natural, everyday conversation to do anything on their computer
@@ -1164,7 +1235,16 @@ async def perform_computer_task(
         except Exception as e:
             results["verification_error"] = str(e)
 
+    # Step 5: Speak announcement out loud if requested
+    if speak_announcement:
+        try:
+            _speak(speak_announcement)
+            results["steps_completed"].append(f"Spoke aloud: '{speak_announcement}'")
+        except Exception as e:
+            results["speech_error"] = str(e)
+
     return json.dumps(results)
+
 
 
 @mcp.tool()

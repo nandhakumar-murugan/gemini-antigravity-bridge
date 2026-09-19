@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gemini-antigravity-bridge"
-version = "1.1.0"
+version = "1.2.0"
 description = "Bidirectional Model Context Protocol (MCP) bridge connecting Google Gemini Spark with DeepMind Antigravity"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,7 +25,9 @@ dependencies = [
     "pytest>=8.0.0",
     "pyautogui>=0.9.54",
     "Pillow>=10.0.0",
+    "pywin32>=306",
 ]
 
 [project.scripts]
 gemini-bridge = "server:main"
+
