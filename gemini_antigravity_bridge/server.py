@@ -1138,8 +1138,103 @@ async def copy_to_clipboard(text: str) -> str:
     return json.dumps(res)
 
 
+# ─── Window Management & System Telemetry Suite ──────────────────────────────
+try:
+    from .window_manager import (
+        get_active_window as _get_active_window,
+        focus_window as _focus_window,
+        maximize_window as _maximize_window,
+        minimize_window as _minimize_window,
+        close_window as _close_window,
+        get_system_telemetry as _get_system_telemetry,
+    )
+except ImportError:
+    from gemini_antigravity_bridge.window_manager import (
+        get_active_window as _get_active_window,
+        focus_window as _focus_window,
+        maximize_window as _maximize_window,
+        minimize_window as _minimize_window,
+        close_window as _close_window,
+        get_system_telemetry as _get_system_telemetry,
+    )
+
+
+@mcp.tool()
+async def focus_window(title_substring: str) -> str:
+    """
+    🪟 FOCUS APPLICATION WINDOW.
+    Brings any open window matching title_substring to the front of the screen and restores it.
+    Use this before typing into an application to guarantee it has active focus.
+
+    Args:
+        title_substring: Part of the window title (e.g. 'Visual Studio Code', 'Chrome', 'Notepad').
+    """
+    res = _focus_window(title_substring)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def get_active_window() -> str:
+    """
+    🔍 GET CURRENT FOREGROUND WINDOW.
+    Returns the exact title, process name, PID, and pixel bounding box of the currently active window.
+    """
+    res = _get_active_window()
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def maximize_window(title_substring: str) -> str:
+    """
+    🔲 MAXIMIZE APPLICATION WINDOW.
+    Maximizes the window matching title_substring on screen.
+
+    Args:
+        title_substring: Part of the window title.
+    """
+    res = _maximize_window(title_substring)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def minimize_window(title_substring: str) -> str:
+    """
+    ➖ MINIMIZE APPLICATION WINDOW.
+    Minimizes the window matching title_substring to the taskbar.
+
+    Args:
+        title_substring: Part of the window title.
+    """
+    res = _minimize_window(title_substring)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def close_window(title_substring: str) -> str:
+    """
+    ❌ CLOSE APPLICATION WINDOW.
+    Gracefully closes the application matching title_substring (equivalent to clicking the X button).
+
+    Args:
+        title_substring: Part of the window title.
+    """
+    res = _close_window(title_substring)
+    return json.dumps(res)
+
+
+@mcp.tool()
+async def get_system_telemetry() -> str:
+    """
+    🔋 GET LAPTOP HARDWARE TELEMETRY & BATTERY.
+    Returns real-time laptop health: battery percentage, charging state, CPU %, and available RAM.
+    """
+    res = _get_system_telemetry()
+    return json.dumps(res)
+
+
 @mcp.tool()
 async def inspect_desktop_overview(include_screenshot: bool = True) -> str:
+
 
     """
     🖥️ UNIFIED DESKTOP & SCREEN INSPECTOR (Astra Computer Vision).
@@ -1168,11 +1263,11 @@ async def perform_computer_task(
     file_path: Optional[str] = None,
     file_content: Optional[str] = None,
     launch_command: Optional[str] = None,
+    focus_window_first: Optional[str] = None,
     gui_steps: Optional[list[dict]] = None,
     verify_screen: bool = True,
     speak_announcement: Optional[str] = None,
 ) -> str:
-
     """
     🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK!
     Whenever the user asks you in natural, everyday conversation to do anything on their computer
@@ -1185,8 +1280,10 @@ async def perform_computer_task(
       1. task_summary: Clear description of what is being done.
       2. file_path & file_content: Optional file to create/write before launching.
       3. launch_command: Optional app or command to launch (e.g. "code C:\\...\\hello.py", "notepad.exe").
-      4. gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
-      5. verify_screen: Automatically confirms active windows after execution.
+      4. focus_window_first: Optional window title to focus before GUI typing (e.g. 'Visual Studio Code').
+      5. gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
+      6. verify_screen: Automatically confirms active windows after execution.
+      7. speak_announcement: Optional spoken confirmation through laptop speakers upon completion.
 
     The user is prompted for permission EXACTLY ONCE.
     """
@@ -1217,6 +1314,16 @@ async def perform_computer_task(
             await asyncio.sleep(2.0)
         except Exception as e:
             results["steps_completed"].append(f"Launch error: {e}")
+
+    # Step 2.5: Focus target window if requested
+    if focus_window_first:
+        try:
+            _focus_window(focus_window_first)
+            results["steps_completed"].append(f"Focused window: {focus_window_first}")
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            results["steps_completed"].append(f"Focus window error: {e}")
+
 
     # Step 3: Execute GUI steps if requested
     if gui_steps:
