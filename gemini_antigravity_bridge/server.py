@@ -1036,12 +1036,213 @@ def get_security_audit_log(limit: Optional[int] = 20, source: Optional[str] = No
     return json.dumps(summary, indent=2)
 
 
+# ─── Screen Vision & Desktop Control (Astra-like Computer Use) ───────────────
+
+try:
+    from .screen_vision import (
+        take_screenshot as _take_screenshot,
+        get_screen_size,
+        get_mouse_position,
+        move_mouse as _move_mouse,
+        click_mouse as _click_mouse,
+        type_text as _type_text,
+        press_key as _press_key,
+        scroll_screen as _scroll_screen,
+        drag_mouse as _drag_mouse,
+    )
+except ImportError:
+    from gemini_antigravity_bridge.screen_vision import (
+        take_screenshot as _take_screenshot,
+        get_screen_size,
+        get_mouse_position,
+        move_mouse as _move_mouse,
+        click_mouse as _click_mouse,
+        type_text as _type_text,
+        press_key as _press_key,
+        scroll_screen as _scroll_screen,
+        drag_mouse as _drag_mouse,
+    )
+
+
+@mcp.tool()
+async def take_screenshot(region_left: int = 0, region_top: int = 0,
+                           region_width: int = 0, region_height: int = 0,
+                           annotate_coords: bool = False) -> str:
+    """
+    📸 Capture the full desktop screen (or a specific region) and return it as a
+    base64-encoded PNG image. Use this to SEE the current state of the computer.
+
+    Args:
+        region_left: Left pixel of region (0 = full screen).
+        region_top: Top pixel of region (0 = full screen).
+        region_width: Width of region (0 = full screen).
+        region_height: Height of region (0 = full screen).
+        annotate_coords: If True, overlays pixel coordinate grid on the image.
+
+    Returns:
+        JSON with image_b64 (base64 PNG), width, height, and timestamp.
+    """
+    try:
+        region = None
+        if region_width > 0 and region_height > 0:
+            region = (region_left, region_top, region_width, region_height)
+        result = _take_screenshot(region=region, annotate_coords=annotate_coords)
+        return json.dumps({
+            "status": "ok",
+            "width": result["width"],
+            "height": result["height"],
+            "mode": result["mode"],
+            "timestamp": result["timestamp"],
+            "image_b64": result["image_b64"],
+            "note": f"Screenshot captured ({result['width']}x{result['height']} px). image_b64 contains the full PNG."
+        })
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def get_screen_info() -> str:
+    """
+    🖥️ Get the current screen resolution and mouse cursor position.
+    Use this before taking a screenshot or moving the mouse.
+
+    Returns:
+        JSON with screen width/height and current mouse x/y position.
+    """
+    try:
+        screen = get_screen_size()
+        mouse = get_mouse_position()
+        return json.dumps({"status": "ok", "screen": screen, "mouse_position": mouse})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def move_mouse(x: int, y: int, duration: float = 0.3) -> str:
+    """
+    🖱️ Move the mouse cursor to a specific pixel position on screen.
+
+    Args:
+        x: Target X coordinate in pixels.
+        y: Target Y coordinate in pixels.
+        duration: Smooth animation time in seconds (0 = instant, 0.3 = smooth).
+    """
+    try:
+        result = _move_mouse(x, y, duration=duration)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def click_mouse(x: int = -1, y: int = -1, button: str = "left",
+                       clicks: int = 1, interval: float = 0.1) -> str:
+    """
+    🖱️ Click the mouse at a position. Supports left/right/middle and double-click.
+
+    Args:
+        x: X coordinate (-1 = current position).
+        y: Y coordinate (-1 = current position).
+        button: 'left', 'right', or 'middle'.
+        clicks: 1 = single click, 2 = double-click.
+        interval: Seconds between clicks.
+    """
+    try:
+        px = x if x >= 0 else None
+        py = y if y >= 0 else None
+        result = _click_mouse(px, py, button=button, clicks=clicks, interval=interval)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def type_text(text: str, interval: float = 0.05) -> str:
+    """
+    ⌨️ Type a string of text using the keyboard at the current cursor focus.
+    Works in any focused text field, terminal, browser, app window, etc.
+
+    Args:
+        text: The text to type.
+        interval: Seconds between each key press (0.05 = natural speed).
+    """
+    try:
+        result = _type_text(text, interval=interval)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def press_key(key: str, presses: int = 1, interval: float = 0.1) -> str:
+    """
+    ⌨️ Press a keyboard key or hotkey combination.
+
+    Keys: 'enter', 'escape', 'tab', 'space', 'backspace', 'delete',
+          'up', 'down', 'left', 'right', 'f1'-'f12', 'win', 'home', 'end'
+
+    Hotkeys (use +): 'ctrl+c', 'ctrl+v', 'ctrl+z', 'alt+tab',
+                     'ctrl+alt+delete', 'win+d', 'ctrl+shift+t'
+
+    Args:
+        key: Key name or '+'-joined hotkey combo.
+        presses: Number of times to press the key.
+        interval: Seconds between repeated presses.
+    """
+    try:
+        result = _press_key(key, presses=presses, interval=interval)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def scroll_screen(x: int, y: int, clicks: int = 3, direction: str = "down") -> str:
+    """
+    🖱️ Scroll the mouse wheel at a specific position on screen.
+
+    Args:
+        x: X coordinate to scroll at.
+        y: Y coordinate to scroll at.
+        clicks: Number of scroll clicks (magnitude).
+        direction: 'up' or 'down'.
+    """
+    try:
+        result = _scroll_screen(x, y, clicks=clicks, direction=direction)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def drag_mouse(from_x: int, from_y: int, to_x: int, to_y: int,
+                      duration: float = 0.5, button: str = "left") -> str:
+    """
+    🖱️ Click and drag the mouse from one position to another.
+    Useful for moving windows, selecting text, drawing, or drag-and-drop.
+
+    Args:
+        from_x, from_y: Starting pixel coordinates.
+        to_x, to_y: Ending pixel coordinates.
+        duration: Drag animation time in seconds.
+        button: Mouse button to hold during drag ('left', 'right', 'middle').
+    """
+    try:
+        result = _drag_mouse(from_x, from_y, to_x, to_y, duration=duration, button=button)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Gemini Antigravity Bridge MCP Server")
     parser.add_argument("--transport", default="stdio", choices=["stdio", "sse"], help="MCP transport mode")
     args, _ = parser.parse_known_args()
-    
+
     if args.transport == "sse":
         print("[INFO] Starting Hardened Antigravity MCP Server on SSE...")
         mcp.run(transport="sse")
@@ -1051,3 +1252,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
