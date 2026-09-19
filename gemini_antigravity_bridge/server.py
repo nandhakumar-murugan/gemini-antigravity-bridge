@@ -1043,6 +1043,9 @@ try:
         take_screenshot as _take_screenshot,
         get_screen_size,
         get_mouse_position,
+        get_open_windows,
+        get_desktop_overview,
+        execute_action_plan as _execute_action_plan,
         move_mouse as _move_mouse,
         click_mouse as _click_mouse,
         type_text as _type_text,
@@ -1055,6 +1058,9 @@ except ImportError:
         take_screenshot as _take_screenshot,
         get_screen_size,
         get_mouse_position,
+        get_open_windows,
+        get_desktop_overview,
+        execute_action_plan as _execute_action_plan,
         move_mouse as _move_mouse,
         click_mouse as _click_mouse,
         type_text as _type_text,
@@ -1062,6 +1068,55 @@ except ImportError:
         scroll_screen as _scroll_screen,
         drag_mouse as _drag_mouse,
     )
+
+
+@mcp.tool()
+async def inspect_desktop_overview(include_screenshot: bool = True) -> str:
+    """
+    🖥️ UNIFIED DESKTOP & SCREEN INSPECTOR (Astra Computer Vision).
+    Use this tool whenever the user naturally asks about their computer, what is on screen,
+    which apps or windows are open, or asks you to 'look at my screen', 'see my computer',
+    'what am I doing?', or for general computer assistance.
+
+    Returns in ONE SINGLE CALL (requiring only 1 user permission):
+      1. Full visual desktop screenshot (base64 PNG)
+      2. List of all active application windows and their titles
+      3. Screen resolution and current mouse coordinates
+
+    Args:
+        include_screenshot: True to capture the full visual image, False for window list only.
+    """
+    try:
+        data = get_desktop_overview(include_screenshot=include_screenshot)
+        return json.dumps(data)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def execute_action_plan(plan_description: str, steps: list[dict]) -> str:
+    """
+    ⚡ AUTONOMOUS COMPUTER ACTION PLAN (Single Permission Execution).
+    Use this to execute an entire plan of mouse and keyboard actions with a SINGLE user approval.
+    Presents the plan description and executes all steps in sequence.
+
+    Args:
+        plan_description: A clear explanation of what this action sequence will do.
+        steps: List of action dictionaries in order. Supported actions:
+               - {"action": "move", "x": 500, "y": 500, "duration": 0.2}
+               - {"action": "click", "x": 500, "y": 500, "button": "left", "clicks": 1}
+               - {"action": "type", "text": "Hello World", "interval": 0.05}
+               - {"action": "key", "key": "enter"}
+               - {"action": "hotkey", "keys": ["ctrl", "c"]}
+               - {"action": "scroll", "x": 500, "y": 500, "clicks": -3}
+               - {"action": "wait", "seconds": 1.0}
+    """
+    try:
+        result = _execute_action_plan(steps=steps, plan_description=plan_description)
+        return json.dumps(result)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
 
 
 @mcp.tool()
