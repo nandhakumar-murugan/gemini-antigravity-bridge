@@ -1094,7 +1094,82 @@ async def inspect_desktop_overview(include_screenshot: bool = True) -> str:
 
 
 @mcp.tool()
+async def perform_computer_task(
+    task_summary: str,
+    file_path: Optional[str] = None,
+    file_content: Optional[str] = None,
+    launch_command: Optional[str] = None,
+    gui_steps: Optional[list[dict]] = None,
+    verify_screen: bool = True,
+) -> str:
+    """
+    🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK!
+    Whenever the user asks you in natural, everyday conversation to do anything on their computer
+    (such as "open VS Code and write hello world", "create a file and open it in Notepad",
+    "launch Chrome and do a task", "type an essay into an editor", etc.):
+
+    DO NOT call write_file, execute_action_plan, and inspect_desktop_overview separately!
+    Doing so causes multiple annoying permission popups. Instead, supply all arguments to this
+    single tool:
+      1. task_summary: Clear description of what is being done.
+      2. file_path & file_content: Optional file to create/write before launching.
+      3. launch_command: Optional app or command to launch (e.g. "code C:\\...\\hello.py", "notepad.exe").
+      4. gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
+      5. verify_screen: Automatically confirms active windows after execution.
+
+    The user is prompted for permission EXACTLY ONCE.
+    """
+    results = {"task_summary": task_summary, "status": "ok", "steps_completed": []}
+
+    # Step 1: Write file if requested
+    if file_path and file_content is not None:
+        try:
+            safe, msg, sanitized = _is_safe_file_access(file_path, "write_file", file_content)
+            if not safe:
+                return json.dumps({"status": "blocked", "reason": msg})
+            resolved = _resolve_safe_path(file_path)
+            os.makedirs(os.path.dirname(resolved), exist_ok=True)
+            with open(resolved, "w", encoding="utf-8") as f:
+                f.write(sanitized if sanitized is not None else file_content)
+            results["steps_completed"].append(f"Written file: {resolved}")
+        except Exception as e:
+            results["steps_completed"].append(f"File write error: {e}")
+
+    # Step 2: Launch application if requested
+    if launch_command:
+        try:
+            safe, msg = _is_safe_command(launch_command)
+            if not safe:
+                return json.dumps({"status": "blocked", "reason": msg})
+            subprocess.Popen(f"start {launch_command}", shell=True)
+            results["steps_completed"].append(f"Launched: {launch_command}")
+            await asyncio.sleep(2.0)
+        except Exception as e:
+            results["steps_completed"].append(f"Launch error: {e}")
+
+    # Step 3: Execute GUI steps if requested
+    if gui_steps:
+        try:
+            gui_res = _execute_action_plan(gui_steps, task_summary)
+            results["gui_results"] = gui_res
+            results["steps_completed"].append(f"Executed {len(gui_steps)} GUI action steps")
+        except Exception as e:
+            results["steps_completed"].append(f"GUI action error: {e}")
+
+    # Step 4: Verify screen state automatically
+    if verify_screen:
+        try:
+            overview = get_desktop_overview(include_screenshot=False)
+            results["active_windows_after_task"] = overview.get("active_windows", [])
+        except Exception as e:
+            results["verification_error"] = str(e)
+
+    return json.dumps(results)
+
+
+@mcp.tool()
 async def execute_action_plan(plan_description: str, steps: list[dict]) -> str:
+
     """
     ⚡ AUTONOMOUS COMPUTER ACTION PLAN (Single Permission Execution).
     Use this to execute an entire plan of mouse and keyboard actions with a SINGLE user approval.
