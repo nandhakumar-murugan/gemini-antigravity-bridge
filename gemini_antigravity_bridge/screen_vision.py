@@ -228,22 +228,21 @@ def get_screen_size() -> dict:
 def get_mouse_position() -> dict:
     """Return the current mouse cursor position."""
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    x, y = pyautogui.position()
-    return {"x": x, "y": y}
+    with attach_desktop():
+        x, y = pyautogui.position()
+        return {"x": x, "y": y}
 
 
-def move_mouse(x: int, y: int, duration: float = 0.3) -> dict:
+def move_mouse(x: int, y: int, duration: float = 0.5) -> dict:
     """
-    Move the mouse cursor to (x, y).
-
-    Args:
-        x: Target X coordinate in pixels.
-        y: Target Y coordinate in pixels.
-        duration: Animation duration in seconds (0 = instant).
+    Move the mouse cursor smoothly to (x, y).
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    pyautogui.moveTo(x, y, duration=duration)
-    return {"moved_to": {"x": x, "y": y}, "duration": duration}
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        pyautogui.moveTo(x, y, duration=duration)
+        pos = pyautogui.position()
+        return {"moved_to": {"x": pos.x, "y": pos.y}, "target": {"x": x, "y": y}, "duration": duration}
 
 
 def click_mouse(
@@ -255,69 +254,58 @@ def click_mouse(
 ) -> dict:
     """
     Click the mouse at (x, y). If no coordinates given, clicks at current position.
-
-    Args:
-        x: X coordinate (optional).
-        y: Y coordinate (optional).
-        button: 'left', 'right', or 'middle'.
-        clicks: Number of clicks (2 for double-click).
-        interval: Seconds between clicks.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    if x is not None and y is not None:
-        pyautogui.click(x, y, button=button, clicks=clicks, interval=interval)
-        return {"clicked": {"x": x, "y": y}, "button": button, "clicks": clicks}
-    else:
-        pyautogui.click(button=button, clicks=clicks, interval=interval)
-        pos = pyautogui.position()
-        return {"clicked": {"x": pos.x, "y": pos.y}, "button": button, "clicks": clicks}
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        if x is not None and y is not None:
+            pyautogui.click(x, y, button=button, clicks=clicks, interval=interval)
+            return {"clicked": {"x": x, "y": y}, "button": button, "clicks": clicks}
+        else:
+            pyautogui.click(button=button, clicks=clicks, interval=interval)
+            pos = pyautogui.position()
+            return {"clicked": {"x": pos.x, "y": pos.y}, "button": button, "clicks": clicks}
 
 
-def type_text(text: str, interval: float = 0.05) -> dict:
+def type_text(text: str, interval: float = 0.02) -> dict:
     """
     Type a string of text using the keyboard.
-
-    Args:
-        text: The text to type.
-        interval: Seconds between each key press.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    pyautogui.typewrite(text, interval=interval)
-    return {"typed": text, "chars": len(text)}
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        pyautogui.typewrite(text, interval=interval)
+        return {"typed": text, "chars": len(text)}
 
 
 def press_key(key: str, presses: int = 1, interval: float = 0.1) -> dict:
     """
     Press a keyboard key or key combination.
-
-    Args:
-        key: Key name e.g. 'enter', 'ctrl+c', 'alt+tab', 'f5', 'escape', 'win'.
-              For combinations use '+' separator: 'ctrl+alt+delete'.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    if "+" in key:
-        keys = [k.strip() for k in key.split("+")]
-        pyautogui.hotkey(*keys)
-        return {"pressed": key, "type": "hotkey"}
-    else:
-        pyautogui.press(key, presses=presses, interval=interval)
-        return {"pressed": key, "presses": presses}
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        if "+" in key:
+            keys = [k.strip() for k in key.split("+")]
+            mapped = ["winleft" if k.lower() == "win" else k.lower() for k in keys]
+            pyautogui.hotkey(*mapped)
+            return {"pressed": key, "type": "hotkey"}
+        else:
+            k = "winleft" if key.lower() == "win" else key
+            pyautogui.press(k, presses=presses, interval=interval)
+            return {"pressed": key, "presses": presses}
 
 
 def scroll_screen(x: int, y: int, clicks: int, direction: str = "up") -> dict:
     """
     Scroll the mouse wheel at a given position.
-
-    Args:
-        x: X coordinate to scroll at.
-        y: Y coordinate to scroll at.
-        clicks: Number of scroll clicks (positive = up, negative = down).
-        direction: 'up' or 'down' (overridden by sign of clicks).
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    amount = abs(clicks) if direction == "up" else -abs(clicks)
-    pyautogui.scroll(amount, x=x, y=y)
-    return {"scrolled": {"x": x, "y": y}, "clicks": amount, "direction": direction}
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        amount = abs(clicks) if direction == "up" else -abs(clicks)
+        pyautogui.scroll(amount, x=x, y=y)
+        return {"scrolled": {"x": x, "y": y}, "clicks": amount, "direction": direction}
 
 
 def drag_mouse(
@@ -328,21 +316,18 @@ def drag_mouse(
 ) -> dict:
     """
     Click and drag from one position to another.
-
-    Args:
-        from_x, from_y: Starting position.
-        to_x, to_y: Ending position.
-        duration: Drag animation time in seconds.
-        button: Mouse button to hold during drag.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    pyautogui.moveTo(from_x, from_y, duration=0.2)
-    pyautogui.dragTo(to_x, to_y, duration=duration, button=button)
-    return {
-        "dragged": {"from": {"x": from_x, "y": from_y}, "to": {"x": to_x, "y": to_y}},
-        "duration": duration,
-        "button": button,
-    }
+    with attach_desktop():
+        pyautogui.FAILSAFE = False
+        pyautogui.moveTo(from_x, from_y, duration=0.2)
+        pyautogui.dragTo(to_x, to_y, duration=duration, button=button)
+        return {
+            "dragged": {"from": {"x": from_x, "y": from_y}, "to": {"x": to_x, "y": to_y}},
+            "duration": duration,
+            "button": button,
+        }
+
 
 
 def get_open_windows() -> list[str]:
