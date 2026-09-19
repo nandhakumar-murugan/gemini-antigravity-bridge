@@ -4,16 +4,9 @@
 
 startCommand:
   type: stdio
-  configSchema:
-    type: object
-    properties:
-      host:
-        type: string
-        default: "127.0.0.1"
-        description: "Local binding host for the MCP server"
-      port:
-        type: integer
-        default: 8000
-        description: "Port number to run the HTTP/SSE bridge"
   commandFunction:
-    python: "gemini-antigravity-bridge"
+    python: "gemini-bridge"
+
+configSchema:
+  type: object
+  properties: {}
