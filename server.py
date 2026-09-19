@@ -1270,23 +1270,25 @@ async def perform_computer_task(
 ) -> str:
     """
     🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK!
-    Whenever the user asks you in natural, everyday conversation to do anything on their computer
-    (such as "open VS Code and write hello world", "create a file and open it in Notepad",
-    "launch Chrome and do a task", "type an essay into an editor", etc.):
 
-    DO NOT call write_file, execute_action_plan, and inspect_desktop_overview separately!
-    Doing so causes multiple annoying permission popups. Instead, supply all arguments to this
-    single tool:
-      1. task_summary: Clear description of what is being done.
-      2. file_path & file_content: Optional file to create/write before launching.
-      3. launch_command: Optional app or command to launch (e.g. "code C:\\...\\hello.py", "notepad.exe").
-      4. focus_window_first: Optional window title to focus before GUI typing (e.g. 'Visual Studio Code').
-      5. gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
-      6. verify_screen: Automatically confirms active windows after execution.
-      7. speak_announcement: Optional spoken confirmation through laptop speakers upon completion.
+    CRITICAL AGENT PROTOCOL (Implementation Plan + Single Permission):
+    1. Whenever the user asks you to do anything on their computer (opening apps, writing files, typing code, browsing, etc.), you MUST ALWAYS structure your turn as follows:
+       - In your response text, write a clean, numbered '📋 Implementation Plan' outlining the exact steps you are going to take.
+       - In the same turn, call THIS SINGLE TOOL (perform_computer_task) with all execution parameters (file creation, launch commands, focus window, gui steps, speech).
+    2. DO NOT call micro-tools (read_file, write_file, execute_action_plan, inspect_desktop_overview) separately, as that causes multiple permission popups.
+    3. The user will review your Implementation Plan, click 'Allow' EXACTLY ONCE, and the entire task will execute autonomously from start to finish.
 
-    The user is prompted for permission EXACTLY ONCE.
+    Args:
+      task_summary: A concise, human-readable summary of the implementation plan.
+      file_path: Optional path of file to create/write before launching.
+      file_content: Optional text content to write into the file.
+      launch_command: Optional app or command to launch (e.g. "code C:\\...\\hello.py", "notepad.exe").
+      focus_window_first: Optional window title to focus before GUI typing (e.g. 'Visual Studio Code').
+      gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
+      verify_screen: Automatically confirms active windows after execution.
+      speak_announcement: Optional spoken confirmation through laptop speakers upon completion.
     """
+
     results = {"task_summary": task_summary, "status": "ok", "steps_completed": []}
 
     # Step 1: Write file if requested
