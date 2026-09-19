@@ -1260,44 +1260,52 @@ async def inspect_desktop_overview(include_screenshot: bool = True) -> str:
 @mcp.tool()
 async def perform_computer_task(
     task_summary: str,
-    file_path: Optional[str] = None,
-    file_content: Optional[str] = None,
-    launch_command: Optional[str] = None,
     launch_app_via_search: Optional[str] = None,
     focus_window_first: Optional[str] = None,
+    type_text_into_window: Optional[str] = None,
     gui_steps: Optional[list[dict]] = None,
+    launch_command: Optional[str] = None,
+    file_path: Optional[str] = None,
+    file_content: Optional[str] = None,
     verify_screen: bool = True,
     speak_announcement: Optional[str] = None,
 ) -> str:
     """
     🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK!
 
-    CRITICAL AGENT PROTOCOL (Implementation Plan + Single Permission):
-    1. Whenever the user asks you to do anything on their computer (opening apps, writing files, typing code, browsing, etc.), you MUST ALWAYS structure your turn as follows:
-       - In your response text, write a clean, numbered '📋 Implementation Plan' outlining the exact steps you are going to take.
-       - In the same turn, call THIS SINGLE TOOL (perform_computer_task) with all execution parameters.
-    2. DO NOT call micro-tools (read_file, write_file, execute_action_plan, inspect_desktop_overview) separately, as that causes multiple permission popups.
-    3. The user will review your Implementation Plan, click 'Allow' EXACTLY ONCE, and the entire task will execute autonomously from start to finish.
-    4. HUMAN-LIKE APPLICATION LAUNCHING:
-       To open an application like VS Code or Notepad, use `launch_app_via_search="Visual Studio Code"`. The bridge will interact just like a human:
-       Presses Windows key -> types the app name in Start Menu search -> presses Enter!
-       This ensures GUI apps launch cleanly without creating rogue terminal windows.
+    🚨 CRITICAL OPERATING PRINCIPLE: 100% HUMAN DESKTOP INTERACTION BY DEFAULT
+    - BY DEFAULT, YOU MUST ALWAYS ACT LIKE A REAL HUMAN SITTING AT THE COMPUTER:
+      1. To open ANY application (Notepad, VS Code, Browser, Settings, Calculator, etc.):
+         Use `launch_app_via_search="Notepad"` (or `"Visual Studio Code"`).
+         The bridge interacts exactly like a human:
+         Presses Windows key -> types the app name into Start Menu search -> presses Enter!
+         This completely avoids terminal glitches and ensures clean GUI app launches.
+      2. To write text, numbers, or code into an open app:
+         Use `type_text_into_window="your text here"`. The bridge will click inside the document area,
+         focus the editor, and paste the content cleanly.
+      3. To save files or perform app shortcuts:
+         Use `gui_steps` with `{"action": "hotkey", "keys": ["ctrl", "s"]}`.
+      4. STRICT COMMAND RULE:
+         DO NOT use `launch_command` or terminal commands UNLESS the user EXPLICITLY says:
+         'use terminal', 'use command line', or 'run in cmd'.
+         For all normal user requests, ALWAYS default to human mouse and keyboard interaction!
 
     Args:
       task_summary: A concise, human-readable summary of the implementation plan.
-      file_path: Optional path of file to create/write before launching.
-      file_content: Optional text content to write into the file.
-      launch_command: Optional command to launch (e.g. "notepad.exe", "code").
-      launch_app_via_search: Preferred app name to launch via Windows Start Menu search (e.g. "Visual Studio Code", "Notepad").
-      focus_window_first: Target window title to focus and verify before GUI typing (e.g. 'Visual Studio Code').
+      launch_app_via_search: Preferred app name to launch via Start Menu (e.g. "Notepad", "Visual Studio Code").
+      focus_window_first: Target window title to focus and verify before GUI typing (e.g. 'Notepad', 'Visual Studio Code').
+      type_text_into_window: Optional text, numbers, or code to write directly into the active window.
       gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
+      launch_command: ONLY use if user explicitly asked for command-line execution (e.g. "cmd.exe", "python ...").
+      file_path: Optional backend file path if explicitly requested.
+      file_content: Optional backend file content if explicitly requested.
       verify_screen: Automatically confirms active windows after execution.
-      speak_announcement: Optional spoken confirmation through laptop speakers upon completion.
+      speak_announcement: Spoken voice confirmation through laptop speakers upon completion.
     """
 
     results = {"task_summary": task_summary, "status": "ok", "steps_completed": []}
 
-    # Step 1: Write file if requested
+    # Step 1: Write file if explicitly requested
     if file_path and file_content is not None:
         try:
             resolved = _resolve_safe_path(file_path)
@@ -1314,23 +1322,14 @@ async def perform_computer_task(
         except Exception as e:
             results["steps_completed"].append(f"File write error: {e}")
 
-    # Step 2: Launch application via Start Menu search (Human style) or command
+    # Step 2: Launch application via Start Menu search (Human style, DEFAULT)
     app_to_search = launch_app_via_search
     if not app_to_search and launch_command:
         cmd_clean = launch_command.lower().strip()
         if cmd_clean in ("code", "visual studio code", "vs code", "vscode"):
             app_to_search = "visual studio code"
-        elif cmd_clean.startswith(("code ", "vscode ")):
-            code_exe = r"E:\Microsoft VS Code\Code.exe"
-            if os.path.exists(code_exe):
-                args = [code_exe] + launch_command.split()[1:]
-                try:
-                    subprocess.Popen(args, cwd=os.path.dirname(code_exe))
-                    results["steps_completed"].append(f"Launched VS Code directly: {launch_command}")
-                except Exception as e:
-                    results["steps_completed"].append(f"Launch error: {e}")
-            else:
-                app_to_search = "visual studio code"
+        elif cmd_clean in ("notepad", "notepad.exe", "wordpad", "wordpad.exe"):
+            app_to_search = "notepad"
 
     if app_to_search:
         try:
@@ -1380,6 +1379,34 @@ async def perform_computer_task(
             )
             _log_action("perform_computer_task", {"task_summary": task_summary, "target_window": focus_window_first}, json.dumps(results))
             return json.dumps(results)
+
+    # Step 2.7: Human-like typing into active document window
+    if type_text_into_window:
+        try:
+            from .window_manager import get_active_window
+            from .multimedia import copy_to_clipboard
+        except ImportError:
+            from gemini_antigravity_bridge.window_manager import get_active_window
+            from gemini_antigravity_bridge.multimedia import copy_to_clipboard
+
+        try:
+            active_info = get_active_window()
+            if active_info.get("status") == "ok" and "bounds" in active_info:
+                b = active_info["bounds"]
+                cx = b["left"] + max(50, b["width"] // 2)
+                cy = b["top"] + max(50, b["height"] // 2)
+                _click_mouse(cx, cy)
+            else:
+                _click_mouse(350, 350)
+            await asyncio.sleep(0.4)
+
+            copy_to_clipboard(type_text_into_window)
+            await asyncio.sleep(0.2)
+            _press_key("ctrl+v")
+            await asyncio.sleep(0.5)
+            results["steps_completed"].append(f"Wrote {len(type_text_into_window)} characters directly into active window (human-like)")
+        except Exception as e:
+            results["steps_completed"].append(f"Window writing error: {e}")
 
     # Step 3: Execute GUI steps into the verified focused window
     if gui_steps:
