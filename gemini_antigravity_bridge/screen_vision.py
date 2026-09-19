@@ -420,12 +420,40 @@ def execute_action_plan(steps: list[dict], plan_description: str = "") -> dict:
         for i, step in enumerate(steps):
             action = step.get("action", "").lower()
             try:
-                if action in ("launch", "open", "run"):
-                    cmd = step.get("command") or step.get("app") or step.get("target") or "notepad.exe"
-                    subprocess.Popen(f"start {cmd}", shell=True)
-                    wait_sec = step.get("seconds") or step.get("wait") or 1.5
+                if action in ("launch_app", "search_app", "start_app"):
+                    app = step.get("app") or step.get("name") or step.get("target") or "visual studio code"
+                    press_key("win")
+                    time.sleep(0.6)
+                    type_text(app, interval=0.03)
+                    time.sleep(0.6)
+                    press_key("enter")
+                    wait_sec = step.get("seconds") or step.get("wait") or 2.5
                     time.sleep(wait_sec)
-                    res = {"launched": cmd}
+                    res = {"launched_app": app, "method": "start_menu_search"}
+                elif action in ("launch", "open", "run"):
+                    cmd = step.get("command") or step.get("app") or step.get("target") or "notepad.exe"
+                    cmd_clean = cmd.lower().strip()
+                    if cmd_clean in ("code", "visual studio code", "vs code", "vscode"):
+                        press_key("win")
+                        time.sleep(0.6)
+                        type_text("visual studio code", interval=0.03)
+                        time.sleep(0.6)
+                        press_key("enter")
+                        wait_sec = step.get("seconds") or step.get("wait") or 2.5
+                        time.sleep(wait_sec)
+                        res = {"launched": "Visual Studio Code", "method": "start_menu_search"}
+                    else:
+                        subprocess.Popen(f'cmd.exe /c start "" {cmd}', shell=True)
+                        wait_sec = step.get("seconds") or step.get("wait") or 1.5
+                        time.sleep(wait_sec)
+                        res = {"launched": cmd}
+                elif action in ("focus", "focus_window"):
+                    win_title = step.get("title") or step.get("window") or ""
+                    try:
+                        from .window_manager import focus_window
+                    except ImportError:
+                        from gemini_antigravity_bridge.window_manager import focus_window
+                    res = focus_window(win_title)
                 elif action == "move":
                     res = move_mouse(step["x"], step["y"], step.get("duration", 0.2))
                 elif action == "click":

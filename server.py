@@ -1263,6 +1263,7 @@ async def perform_computer_task(
     file_path: Optional[str] = None,
     file_content: Optional[str] = None,
     launch_command: Optional[str] = None,
+    launch_app_via_search: Optional[str] = None,
     focus_window_first: Optional[str] = None,
     gui_steps: Optional[list[dict]] = None,
     verify_screen: bool = True,
@@ -1274,16 +1275,21 @@ async def perform_computer_task(
     CRITICAL AGENT PROTOCOL (Implementation Plan + Single Permission):
     1. Whenever the user asks you to do anything on their computer (opening apps, writing files, typing code, browsing, etc.), you MUST ALWAYS structure your turn as follows:
        - In your response text, write a clean, numbered '📋 Implementation Plan' outlining the exact steps you are going to take.
-       - In the same turn, call THIS SINGLE TOOL (perform_computer_task) with all execution parameters (file creation, launch commands, focus window, gui steps, speech).
+       - In the same turn, call THIS SINGLE TOOL (perform_computer_task) with all execution parameters.
     2. DO NOT call micro-tools (read_file, write_file, execute_action_plan, inspect_desktop_overview) separately, as that causes multiple permission popups.
     3. The user will review your Implementation Plan, click 'Allow' EXACTLY ONCE, and the entire task will execute autonomously from start to finish.
+    4. HUMAN-LIKE APPLICATION LAUNCHING:
+       To open an application like VS Code or Notepad, use `launch_app_via_search="Visual Studio Code"`. The bridge will interact just like a human:
+       Presses Windows key -> types the app name in Start Menu search -> presses Enter!
+       This ensures GUI apps launch cleanly without creating rogue terminal windows.
 
     Args:
       task_summary: A concise, human-readable summary of the implementation plan.
       file_path: Optional path of file to create/write before launching.
       file_content: Optional text content to write into the file.
-      launch_command: Optional app or command to launch (e.g. "code C:\\...\\hello.py", "notepad.exe").
-      focus_window_first: Optional window title to focus before GUI typing (e.g. 'Visual Studio Code').
+      launch_command: Optional command to launch (e.g. "notepad.exe", "code").
+      launch_app_via_search: Preferred app name to launch via Windows Start Menu search (e.g. "Visual Studio Code", "Notepad").
+      focus_window_first: Target window title to focus and verify before GUI typing (e.g. 'Visual Studio Code').
       gui_steps: Optional sequence of mouse/keyboard actions (clicks, typing, hotkeys).
       verify_screen: Automatically confirms active windows after execution.
       speak_announcement: Optional spoken confirmation through laptop speakers upon completion.
@@ -1294,10 +1300,13 @@ async def perform_computer_task(
     # Step 1: Write file if requested
     if file_path and file_content is not None:
         try:
-            safe, msg, sanitized = _is_safe_file_access(file_path, "write_file", file_content)
-            if not safe:
-                return json.dumps({"status": "blocked", "reason": msg})
             resolved = _resolve_safe_path(file_path)
+            safe, msg, sanitized = _is_safe_file_access(resolved, "write_file", file_content)
+            if not safe:
+                results["status"] = "blocked"
+                results["error"] = f"File write blocked by security policy: {msg}"
+                _log_action("perform_computer_task", {"task_summary": task_summary, "file_path": resolved}, json.dumps(results))
+                return json.dumps(results)
             os.makedirs(os.path.dirname(resolved), exist_ok=True)
             with open(resolved, "w", encoding="utf-8") as f:
                 f.write(sanitized if sanitized is not None else file_content)
@@ -1305,29 +1314,74 @@ async def perform_computer_task(
         except Exception as e:
             results["steps_completed"].append(f"File write error: {e}")
 
-    # Step 2: Launch application if requested
-    if launch_command:
+    # Step 2: Launch application via Start Menu search (Human style) or command
+    app_to_search = launch_app_via_search
+    if not app_to_search and launch_command:
+        cmd_clean = launch_command.lower().strip()
+        if cmd_clean in ("code", "visual studio code", "vs code", "vscode"):
+            app_to_search = "visual studio code"
+        elif cmd_clean.startswith(("code ", "vscode ")):
+            code_exe = r"E:\Microsoft VS Code\Code.exe"
+            if os.path.exists(code_exe):
+                args = [code_exe] + launch_command.split()[1:]
+                try:
+                    subprocess.Popen(args, cwd=os.path.dirname(code_exe))
+                    results["steps_completed"].append(f"Launched VS Code directly: {launch_command}")
+                except Exception as e:
+                    results["steps_completed"].append(f"Launch error: {e}")
+            else:
+                app_to_search = "visual studio code"
+
+    if app_to_search:
+        try:
+            _press_key("win")
+            await asyncio.sleep(0.6)
+            _type_text(app_to_search, interval=0.03)
+            await asyncio.sleep(0.6)
+            _press_key("enter")
+            results["steps_completed"].append(f"Launched '{app_to_search}' via Windows Start search (human-like)")
+            await asyncio.sleep(2.5)
+        except Exception as e:
+            results["steps_completed"].append(f"Start search launch error: {e}")
+    elif launch_command and not any("Launched" in s for s in results["steps_completed"]):
         try:
             safe, msg = _is_safe_command(launch_command)
             if not safe:
-                return json.dumps({"status": "blocked", "reason": msg})
-            subprocess.Popen(f"start {launch_command}", shell=True)
-            results["steps_completed"].append(f"Launched: {launch_command}")
+                results["status"] = "blocked"
+                results["error"] = f"Command blocked by policy: {msg}"
+                _log_action("perform_computer_task", {"task_summary": task_summary, "launch_command": launch_command}, json.dumps(results))
+                return json.dumps(results)
+            subprocess.Popen(f'cmd.exe /c start "" {launch_command}', shell=True)
+            results["steps_completed"].append(f"Launched command: {launch_command}")
             await asyncio.sleep(2.0)
         except Exception as e:
             results["steps_completed"].append(f"Launch error: {e}")
 
-    # Step 2.5: Focus target window if requested
+    # Step 2.5: Focus target window with polling and STRICT safety verification
     if focus_window_first:
-        try:
-            _focus_window(focus_window_first)
-            results["steps_completed"].append(f"Focused window: {focus_window_first}")
+        focused = False
+        focused_title = ""
+        # Poll up to 10 seconds (20 iterations x 0.5s) for the app window to render
+        for _ in range(20):
+            res = _focus_window(focus_window_first)
+            if res.get("status") == "ok":
+                focused = True
+                focused_title = res.get("focused", focus_window_first)
+                results["steps_completed"].append(f"Focused window: '{focused_title}'")
+                await asyncio.sleep(1.0)
+                break
             await asyncio.sleep(0.5)
-        except Exception as e:
-            results["steps_completed"].append(f"Focus window error: {e}")
 
+        if not focused:
+            results["status"] = "failed"
+            results["error"] = (
+                f"Target window matching '{focus_window_first}' did not appear after launching. "
+                f"GUI actions were ABORTED for safety to prevent typing into the wrong window."
+            )
+            _log_action("perform_computer_task", {"task_summary": task_summary, "target_window": focus_window_first}, json.dumps(results))
+            return json.dumps(results)
 
-    # Step 3: Execute GUI steps if requested
+    # Step 3: Execute GUI steps into the verified focused window
     if gui_steps:
         try:
             gui_res = _execute_action_plan(gui_steps, task_summary)
@@ -1352,6 +1406,7 @@ async def perform_computer_task(
         except Exception as e:
             results["speech_error"] = str(e)
 
+    _log_action("perform_computer_task", {"task_summary": task_summary, "steps": len(results["steps_completed"])}, json.dumps(results))
     return json.dumps(results)
 
 
