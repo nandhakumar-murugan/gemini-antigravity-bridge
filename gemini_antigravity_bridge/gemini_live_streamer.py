@@ -34,9 +34,11 @@ from google.genai import types
 try:
     from .screen_vision import _screenshot_win32_ctypes, execute_action_plan
     from .window_manager import focus_window, get_active_window
+    from .gemini_floating_widget import GeminiFloatingWidget
 except (ImportError, ValueError):
     from screen_vision import _screenshot_win32_ctypes, execute_action_plan
     from window_manager import focus_window, get_active_window
+    from gemini_floating_widget import GeminiFloatingWidget
 
 # Live Audio Specs
 AUDIO_IN_RATE = 16000
@@ -53,11 +55,14 @@ LIVE_MODEL = "gemini-2.5-flash-native-audio-latest"
 
 
 class GeminiLiveDesktopCompanion:
-    def __init__(self, model_name: str = LIVE_MODEL):
+    def __init__(self, model_name: str = LIVE_MODEL, enable_widget: bool = True):
         self.model_name = model_name
         self.client = genai.Client()
         self.running = False
         self.p_audio = pyaudio.PyAudio()
+        self.audio_out_stream: Optional[pyaudio.Stream] = None
+        self.audio_in_stream: Optional[pyaudio.Stream] = None
+        self.widget = GeminiFloatingWidget(on_close=self.stop) if enable_widget else None
         self.audio_out_stream: Optional[pyaudio.Stream] = None
         self.audio_in_stream: Optional[pyaudio.Stream] = None
 
@@ -104,7 +109,10 @@ class GeminiLiveDesktopCompanion:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"[ERROR in screen loop]: {e}")
+                err = str(e).lower()
+                if any(x in err for x in ("closed", "timeout", "1011", "1006", "internal error")):
+                    break
+                print(f"[WARN in screen loop]: {e}")
                 await asyncio.sleep(1.0)
 
     async def _stream_mic_loop(self, session):
@@ -124,71 +132,98 @@ class GeminiLiveDesktopCompanion:
                 if data:
                     blob = types.Blob(data=data, mime_type="audio/pcm;rate=16000")
                     await session.send_realtime_input(audio=blob)
+                    # Voice activity detection for widget indicator
+                    if self.widget and len(data) >= 128:
+                        try:
+                            # Quick peak check
+                            peak = max(abs(int.from_bytes(data[i:i+2], byteorder='little', signed=True)) for i in range(0, min(len(data), 256), 16))
+                            if peak > 1500 and self.widget.current_state not in ("talking", "working"):
+                                self.widget.set_state("listening", "Listening to your voice...")
+                        except Exception:
+                            pass
             except asyncio.CancelledError:
                 break
             except Exception as e:
+                err = str(e).lower()
+                if any(x in err for x in ("closed", "timeout", "1011", "1006", "internal error")):
+                    break
                 await asyncio.sleep(0.1)
 
     async def _receive_loop(self, session):
         """Receives live model responses (audio to speakers + real-time text transcription + tool calls)."""
         print("[READY] Connected to Gemini Live! Gemini can now see your screen and hear your voice.\n")
-        async for response in session.receive():
-            if not self.running:
-                break
+        try:
+            async for response in session.receive():
+                if not self.running:
+                    break
 
-            server_content = response.server_content
-            if server_content is not None:
-                model_turn = server_content.model_turn
-                if model_turn is not None:
-                    for part in model_turn.parts:
-                        # 1. Output audio to speakers
-                        if part.inline_data and self.audio_out_stream:
-                            self.audio_out_stream.write(part.inline_data.data)
+                server_content = response.server_content
+                if server_content is not None:
+                    model_turn = server_content.model_turn
+                    if model_turn is not None:
+                        for part in model_turn.parts:
+                            # 1. Output audio to speakers
+                            if part.inline_data and self.audio_out_stream:
+                                if self.widget and self.widget.current_state != "talking":
+                                    self.widget.set_state("talking", "Gemini Speaking...")
+                                self.audio_out_stream.write(part.inline_data.data)
 
-                        # 2. Text transcription
-                        if part.text:
-                            print(part.text, end="", flush=True)
+                            # 2. Text transcription & Widget Update
+                            if part.text:
+                                print(part.text, end="", flush=True)
+                                if self.widget:
+                                    self.widget.set_state("talking", part.text)
 
-                if server_content.turn_complete:
-                    print()  # newline after complete turn
+                    if server_content.turn_complete:
+                        print()  # newline after complete turn
+                        if self.widget:
+                            self.widget.set_state("idle", "Gemini Live Watching Screen")
 
-            # 3. Handle Live Tool Calls
-            tool_call = response.tool_call
-            if tool_call is not None:
-                for call in tool_call.function_calls:
-                    name = call.name
-                    args = call.args or {}
-                    call_id = call.id
-                    print(f"\n[LIVE TOOL CALL] {name}({args})")
+                # 3. Handle Live Tool Calls
+                tool_call = response.tool_call
+                if tool_call is not None:
+                    for call in tool_call.function_calls:
+                        name = call.name
+                        args = call.args or {}
+                        call_id = call.id
+                        print(f"\n[LIVE TOOL CALL] {name}({args})")
+                        if self.widget:
+                            self.widget.set_state("working", f"Performing: {name}...")
 
-                    # Execute live action
-                    result_content = "ok"
-                    try:
-                        if name == "focus_window":
-                            res = focus_window(args.get("title_substring", ""))
-                            result_content = str(res)
-                        elif name == "get_active_window":
-                            res = get_active_window()
-                            result_content = str(res)
-                        elif name == "execute_action_plan":
-                            res = execute_action_plan(args.get("steps", []), args.get("plan_description", ""))
-                            result_content = str(res)
-                    except Exception as e:
-                        result_content = f"Error: {e}"
+                        # Execute live action
+                        result_content = "ok"
+                        try:
+                            if name == "focus_window":
+                                res = focus_window(args.get("title_substring", ""))
+                                result_content = str(res)
+                            elif name == "get_active_window":
+                                res = get_active_window()
+                                result_content = str(res)
+                            elif name == "execute_action_plan":
+                                res = execute_action_plan(args.get("steps", []), args.get("plan_description", ""))
+                                result_content = str(res)
+                        except Exception as e:
+                            result_content = f"Error: {e}"
 
-                    # Send tool response back to live session
-                    await session.send_tool_response(
-                        function_responses=[
-                            types.FunctionResponse(
-                                name=name,
-                                id=call_id,
-                                response={"result": result_content},
-                            )
-                        ]
-                    )
+                        # Send tool response back to live session
+                        await session.send_tool_response(
+                            function_responses=[
+                                types.FunctionResponse(
+                                    name=name,
+                                    id=call_id,
+                                    response={"result": result_content},
+                                )
+                            ]
+                        )
+                        if self.widget:
+                            self.widget.set_state("idle", "Action Completed")
+        except Exception as e:
+            err = str(e).lower()
+            if not any(x in err for x in ("closed", "timeout", "1011", "1006")):
+                print(f"[RECEIVE NOTICE]: {e}")
 
     async def start(self):
-        """Main async entry point for the Gemini Live session."""
+        """Main async entry point for the Gemini Live session with auto-reconnect."""
         self.running = True
         self._setup_audio()
 
@@ -242,10 +277,12 @@ class GeminiLiveDesktopCompanion:
             system_instruction=types.Content(
                 parts=[
                     types.Part.from_text(
-                        "You are Gemini Live Desktop Companion, an autonomous AI pair programmer and desktop assistant. "
-                        "You have continuous live vision of the user's Windows computer desktop via video frames, and you hear their voice. "
-                        "Speak concisely and naturally like a helpful pair programmer. "
-                        "When the user asks you to interact with something on screen, you can use your tools to focus windows, click, and type."
+                        text=(
+                            "You are Gemini Live Desktop Companion, an autonomous AI pair programmer and desktop assistant. "
+                            "You have continuous live vision of the user's Windows computer desktop via video frames, and you hear their voice. "
+                            "Speak concisely and naturally like a helpful pair programmer. "
+                            "When the user asks you to interact with something on screen, you can use your tools to focus windows, click, and type."
+                        )
                     )
                 ]
             ),
@@ -253,24 +290,34 @@ class GeminiLiveDesktopCompanion:
             tools=tools,
         )
 
-        print(f"[CONNECTING] Opening bidirectional live stream with {self.model_name}...")
-        async with self.client.aio.live.connect(model=self.model_name, config=config) as session:
-            tasks = [
-                asyncio.create_task(self._stream_screen_loop(session)),
-                asyncio.create_task(self._stream_mic_loop(session)),
-                asyncio.create_task(self._receive_loop(session)),
-            ]
+        while self.running:
             try:
-                await asyncio.gather(*tasks)
+                print(f"[CONNECTING] Opening bidirectional live stream with {self.model_name}...")
+                async with self.client.aio.live.connect(model=self.model_name, config=config) as session:
+                    tasks = [
+                        asyncio.create_task(self._stream_screen_loop(session)),
+                        asyncio.create_task(self._stream_mic_loop(session)),
+                        asyncio.create_task(self._receive_loop(session)),
+                    ]
+                    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                    for t in pending:
+                        t.cancel()
             except asyncio.CancelledError:
-                pass
-            finally:
-                for t in tasks:
-                    t.cancel()
+                break
+            except Exception as e:
+                if not self.running:
+                    break
+                print(f"[AUTO-RECONNECT] Connection closed ({e}). Reconnecting in 2 seconds...")
+                await asyncio.sleep(2.0)
 
     def stop(self):
-        """Stops the live stream and releases audio hardware."""
+        """Stops the live stream, widget, and releases audio hardware."""
         self.running = False
+        if self.widget:
+            try:
+                self.widget.stop()
+            except Exception:
+                pass
         if self.audio_out_stream:
             try:
                 self.audio_out_stream.stop_stream()

@@ -37,20 +37,17 @@ from contextlib import contextmanager
 @contextmanager
 def attach_desktop():
     """
-    Attaches thread to interactive window station (WinSta0) and Default desktop.
+    Attaches thread to interactive input desktop.
     Required for synthetic mouse and keyboard input on Windows.
     """
     import ctypes
     user32 = ctypes.windll.user32
     kernel32 = ctypes.windll.kernel32
 
-    h_winsta_orig = user32.GetProcessWindowStation()
-    h_winsta = user32.OpenWindowStationW("WinSta0", False, 0x037F)
-    if h_winsta:
-        user32.SetProcessWindowStation(h_winsta)
-
     h_desktop_orig = user32.GetThreadDesktop(kernel32.GetCurrentThreadId())
-    h_desktop = user32.OpenDesktopW("Default", 0, False, 0x01FF)
+    h_desktop = user32.OpenInputDesktop(0, False, 0x01FF)
+    if not h_desktop:
+        h_desktop = user32.OpenDesktopW("Default", 0, False, 0x01FF)
     if h_desktop:
         user32.SetThreadDesktop(h_desktop)
     try:
@@ -59,9 +56,6 @@ def attach_desktop():
         if h_desktop:
             user32.SetThreadDesktop(h_desktop_orig)
             user32.CloseDesktop(h_desktop)
-        if h_winsta:
-            user32.SetProcessWindowStation(h_winsta_orig)
-            user32.CloseWindowStation(h_winsta)
 
 
 def _require(module_available: bool, module_name: str):
@@ -76,94 +70,49 @@ def _require(module_available: bool, module_name: str):
 
 def _screenshot_win32_ctypes(region=None):
     """
-    Screenshot using raw Win32 GDI + WinSta0 attachment.
-    Attaches to the interactive Window Station (WinSta0\\Default) before BitBlt
-    so it works correctly from background/daemon processes on Windows.
+    Captures desktop screenshot. Runs in a dedicated clean worker thread to guarantee
+    SetThreadDesktop attaches to the interactive input desktop without Win32 Error 170.
     """
+    _require(PILLOW_AVAILABLE, "Pillow")
+    import threading
     import ctypes
-    import ctypes.wintypes
 
-    user32 = ctypes.windll.user32
-    gdi32  = ctypes.windll.gdi32
+    result = {}
 
-    # ── Step 1: Attach to WinSta0 (interactive window station) ───────────────
-    WINSTA_ALL_ACCESS  = 0x037F
-    DESKTOP_ALL_ACCESS = 0x01FF
+    def _worker():
+        try:
+            user32 = ctypes.windll.user32
+            h_desktop = user32.OpenInputDesktop(0, False, 0x01FF)
+            if not h_desktop:
+                h_desktop = user32.OpenDesktopW("Default", 0, False, 0x01FF)
+            if h_desktop:
+                user32.SetThreadDesktop(h_desktop)
 
-    h_winsta_orig = user32.GetProcessWindowStation()
-    h_winsta = ctypes.windll.user32.OpenWindowStationW("WinSta0", False, WINSTA_ALL_ACCESS)
-    if h_winsta:
-        user32.SetProcessWindowStation(h_winsta)
+            if region:
+                bbox = (region[0], region[1], region[0] + region[2], region[1] + region[3])
+                im = ImageGrab.grab(bbox=bbox)
+            else:
+                im = ImageGrab.grab()
 
-    # ── Step 2: Attach thread to Default desktop ──────────────────────────────
-    h_desktop_orig = user32.GetThreadDesktop(ctypes.windll.kernel32.GetCurrentThreadId())
-    h_desktop = user32.OpenDesktopW("Default", 0, False, DESKTOP_ALL_ACCESS)
-    if h_desktop:
-        user32.SetThreadDesktop(h_desktop)
+            if h_desktop:
+                user32.CloseDesktop(h_desktop)
 
-    try:
-        if region:
-            left, top, width, height = region
-        else:
-            left, top = 0, 0
-            user32.SetProcessDPIAware()
-            width  = user32.GetSystemMetrics(78)  # SM_CXVIRTUALSCREEN
-            height = user32.GetSystemMetrics(79)  # SM_CYVIRTUALSCREEN
+            result["img"] = im.convert("RGB")
+            result["width"] = im.width
+            result["height"] = im.height
+        except Exception as e:
+            result["error"] = e
 
-        # ── Step 3: BitBlt from screen to memory ─────────────────────────────
-        hdc_screen = user32.GetDC(None)
-        hdc_mem    = gdi32.CreateCompatibleDC(hdc_screen)
-        hbitmap    = gdi32.CreateCompatibleBitmap(hdc_screen, width, height)
-        gdi32.SelectObject(hdc_mem, hbitmap)
+    t = threading.Thread(target=_worker)
+    t.start()
+    t.join(timeout=4.0)
 
-        SRCCOPY    = 0x00CC0020
-        CAPTUREBLT = 0x40000000
-        gdi32.BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, left, top, SRCCOPY | CAPTUREBLT)
+    if "error" in result:
+        raise result["error"]
+    if "img" not in result:
+        raise TimeoutError("Screen capture thread timed out")
 
-        # ── Step 4: Extract pixels via GetDIBits ─────────────────────────────
-        class BITMAPINFOHEADER(ctypes.Structure):
-            _fields_ = [
-                ("biSize",          ctypes.wintypes.DWORD),
-                ("biWidth",         ctypes.wintypes.LONG),
-                ("biHeight",        ctypes.wintypes.LONG),
-                ("biPlanes",        ctypes.wintypes.WORD),
-                ("biBitCount",      ctypes.wintypes.WORD),
-                ("biCompression",   ctypes.wintypes.DWORD),
-                ("biSizeImage",     ctypes.wintypes.DWORD),
-                ("biXPelsPerMeter", ctypes.wintypes.LONG),
-                ("biYPelsPerMeter", ctypes.wintypes.LONG),
-                ("biClrUsed",       ctypes.wintypes.DWORD),
-                ("biClrImportant",  ctypes.wintypes.DWORD),
-            ]
-
-        bmi            = BITMAPINFOHEADER()
-        bmi.biSize     = ctypes.sizeof(BITMAPINFOHEADER)
-        bmi.biWidth    = width
-        bmi.biHeight   = -height   # top-down
-        bmi.biPlanes   = 1
-        bmi.biBitCount = 32
-        bmi.biCompression = 0      # BI_RGB
-
-        buf_size = width * height * 4
-        raw_buf  = (ctypes.c_ubyte * buf_size)()
-        gdi32.GetDIBits(hdc_mem, hbitmap, 0, height, raw_buf, ctypes.byref(bmi), 0)
-
-        # Cleanup GDI
-        gdi32.DeleteObject(hbitmap)
-        gdi32.DeleteDC(hdc_mem)
-        user32.ReleaseDC(None, hdc_screen)
-
-    finally:
-        # ── Step 5: Restore original window station / desktop ─────────────────
-        if h_desktop:
-            user32.SetThreadDesktop(h_desktop_orig)
-            user32.CloseDesktop(h_desktop)
-        if h_winsta:
-            user32.SetProcessWindowStation(h_winsta_orig)
-            user32.CloseWindowStation(h_winsta)
-
-    img = Image.frombuffer("RGBA", (width, height), bytes(raw_buf), "raw", "BGRA", 0, 1)
-    return img.convert("RGB"), width, height
+    return result["img"], result["width"], result["height"]
 
 
 
