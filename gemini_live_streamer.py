@@ -15,7 +15,18 @@ import time
 import asyncio
 import threading
 import traceback
+import subprocess
+import webbrowser
+import urllib.parse
 from typing import Optional
+
+# Ensure Windows terminal doesn't crash on Unicode emojis
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 import dotenv
 from PIL import Image
@@ -52,6 +63,70 @@ FRAME_HEIGHT = 576
 
 # Available Live Native Audio Models
 LIVE_MODEL = "gemini-2.5-flash-native-audio-latest"
+
+
+def _open_application(app_name: str) -> str:
+    """Launches or switches to a Windows desktop application."""
+    app_lower = app_name.lower().strip()
+    try:
+        if "chrome" in app_lower:
+            subprocess.Popen(["cmd.exe", "/c", "start", "chrome"], shell=False)
+            return "Launched Google Chrome."
+        elif "notepad" in app_lower:
+            subprocess.Popen(["notepad.exe"])
+            return "Launched Notepad."
+        elif "calc" in app_lower:
+            subprocess.Popen(["calc.exe"])
+            return "Launched Calculator."
+        elif "code" in app_lower or "vs code" in app_lower or "vscode" in app_lower:
+            subprocess.Popen(["cmd.exe", "/c", "code"], shell=False)
+            return "Launched Visual Studio Code."
+        elif "spotify" in app_lower:
+            subprocess.Popen(["cmd.exe", "/c", "start", "spotify:"], shell=False)
+            return "Launched Spotify."
+        elif "explorer" in app_lower or "file" in app_lower:
+            subprocess.Popen(["explorer.exe"])
+            return "Launched File Explorer."
+        else:
+            subprocess.Popen(["cmd.exe", "/c", "start", "", app_name], shell=False)
+            return f"Launched {app_name}."
+    except Exception as e:
+        return f"Error launching {app_name}: {e}"
+
+
+def _open_url(url: str) -> str:
+    """Opens a website in the default browser."""
+    try:
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
+        webbrowser.open(url)
+        return f"Opened {url} in browser."
+    except Exception as e:
+        return f"Error opening URL {url}: {e}"
+
+
+def _play_music(query: str = "") -> str:
+    """Searches and plays music on YouTube or default music service."""
+    try:
+        if query:
+            encoded = urllib.parse.quote_plus(query)
+            url = f"https://www.youtube.com/results?search_query={encoded}"
+        else:
+            url = "https://www.youtube.com"
+        webbrowser.open(url)
+        return f"Playing music on YouTube for query: '{query or 'popular music'}'."
+    except Exception as e:
+        return f"Error playing music: {e}"
+
+
+def _search_web(query: str) -> str:
+    """Searches Google for the given query in the default browser."""
+    try:
+        encoded = urllib.parse.quote_plus(query)
+        webbrowser.open(f"https://www.google.com/search?q={encoded}")
+        return f"Searched Google for '{query}'."
+    except Exception as e:
+        return f"Error searching Google: {e}"
 
 
 class GeminiLiveDesktopCompanion:
@@ -170,7 +245,10 @@ class GeminiLiveDesktopCompanion:
 
                             # 2. Text transcription & Widget Update
                             if part.text:
-                                print(part.text, end="", flush=True)
+                                try:
+                                    print(part.text, end="", flush=True)
+                                except Exception:
+                                    pass
                                 if self.widget:
                                     self.widget.set_state("talking", part.text)
 
@@ -193,7 +271,19 @@ class GeminiLiveDesktopCompanion:
                         # Execute live action
                         result_content = "ok"
                         try:
-                            if name == "focus_window":
+                            if name == "open_application":
+                                res = _open_application(args.get("app_name", ""))
+                                result_content = str(res)
+                            elif name == "open_url":
+                                res = _open_url(args.get("url", ""))
+                                result_content = str(res)
+                            elif name == "play_music":
+                                res = _play_music(args.get("query", ""))
+                                result_content = str(res)
+                            elif name == "search_web":
+                                res = _search_web(args.get("query", ""))
+                                result_content = str(res)
+                            elif name == "focus_window":
                                 res = focus_window(args.get("title_substring", ""))
                                 result_content = str(res)
                             elif name == "get_active_window":
@@ -231,6 +321,49 @@ class GeminiLiveDesktopCompanion:
         tools = [
             types.Tool(
                 function_declarations=[
+                    types.FunctionDeclaration(
+                        name="open_application",
+                        description="Launches or switches to a Windows desktop application (e.g., 'chrome', 'notepad', 'calc', 'spotify', 'code').",
+                        parameters=types.Schema(
+                            type="OBJECT",
+                            properties={
+                                "app_name": types.Schema(type="STRING", description="Name of the application to launch (e.g. chrome, notepad)")
+                            },
+                            required=["app_name"],
+                        ),
+                    ),
+                    types.FunctionDeclaration(
+                        name="play_music",
+                        description="Searches and plays music, songs, or videos on YouTube or default music service.",
+                        parameters=types.Schema(
+                            type="OBJECT",
+                            properties={
+                                "query": types.Schema(type="STRING", description="Song name, artist, genre, or mood to play")
+                            },
+                        ),
+                    ),
+                    types.FunctionDeclaration(
+                        name="open_url",
+                        description="Opens any website URL in the default web browser.",
+                        parameters=types.Schema(
+                            type="OBJECT",
+                            properties={
+                                "url": types.Schema(type="STRING", description="Full URL to open (e.g. https://youtube.com)")
+                            },
+                            required=["url"],
+                        ),
+                    ),
+                    types.FunctionDeclaration(
+                        name="search_web",
+                        description="Searches Google for any query in the web browser.",
+                        parameters=types.Schema(
+                            type="OBJECT",
+                            properties={
+                                "query": types.Schema(type="STRING", description="Search keywords or question")
+                            },
+                            required=["query"],
+                        ),
+                    ),
                     types.FunctionDeclaration(
                         name="focus_window",
                         description="Brings any window matching the title substring to the foreground.",
@@ -281,7 +414,14 @@ class GeminiLiveDesktopCompanion:
                             "You are Gemini Live Desktop Companion, an autonomous AI pair programmer and desktop assistant. "
                             "You have continuous live vision of the user's Windows computer desktop via video frames, and you hear their voice. "
                             "Speak concisely and naturally like a helpful pair programmer. "
-                            "When the user asks you to interact with something on screen, you can use your tools to focus windows, click, and type."
+                            "When the user asks you to interact with the computer, ALWAYS call your tools immediately: "
+                            "- To open applications like Chrome, Notepad, Calculator, VS Code, or Spotify, call `open_application(app_name)`. "
+                            "- To play music, songs, or videos, call `play_music(query)`. "
+                            "- To open a website, call `open_url(url)`. "
+                            "- To search Google, call `search_web(query)`. "
+                            "- To focus an open window, call `focus_window(title_substring)`. "
+                            "- To click or type on screen, call `execute_action_plan(steps)`. "
+                            "Never hesitate or just talk about doing it—call the tool immediately to perform the action."
                         )
                     )
                 ]
