@@ -106,10 +106,23 @@ def _find_window_hwnd(title_sub: str):
                 buf = ctypes.create_unicode_buffer(length + 1)
                 user32.GetWindowTextW(hwnd, buf, length + 1)
                 t = buf.value
-                if target in t.lower():
+                t_lower = t.lower()
+                # Check title match
+                if target in t_lower:
                     found_hwnd = hwnd
                     found_title = t
                     return False
+                # Also check process name match (e.g. "chrome", "notepad")
+                pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                try:
+                    p = psutil.Process(pid.value)
+                    if target in p.name().lower():
+                        found_hwnd = hwnd
+                        found_title = t
+                        return False
+                except Exception:
+                    pass
         return True
 
     WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -130,9 +143,52 @@ def focus_window(title_substring: str) -> dict:
         if not hwnd:
             return {"status": "error", "error": f"No visible window matching '{title_substring}' found."}
 
+        try:
+            user32.AllowSetForegroundWindow(-1)
+        except Exception:
+            pass
+
         SW_RESTORE = 9
+        SW_SHOW = 5
         user32.ShowWindow(hwnd, SW_RESTORE)
-        user32.SetForegroundWindow(hwnd)
+        user32.ShowWindow(hwnd, SW_SHOW)
+
+        # Force foreground activation via AttachThreadInput & ALT key simulation
+        fg_hwnd = user32.GetForegroundWindow()
+        fg_tid = user32.GetWindowThreadProcessId(fg_hwnd, None) if fg_hwnd else 0
+        cur_tid = kernel32.GetCurrentThreadId()
+
+        user32.keybd_event(0x12, 0, 0, 0)  # ALT down
+        if fg_tid and fg_tid != cur_tid:
+            try:
+                user32.AttachThreadInput(cur_tid, fg_tid, True)
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+                user32.AttachThreadInput(cur_tid, fg_tid, False)
+            except Exception:
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+        else:
+            user32.BringWindowToTop(hwnd)
+            user32.SetForegroundWindow(hwnd)
+        user32.keybd_event(0x12, 0, 2, 0)  # ALT up
+
+        try:
+            user32.SwitchToThisWindow(hwnd, True)
+        except Exception:
+            pass
+
+        try:
+            HWND_TOPMOST = -1
+            HWND_NOTOPMOST = -2
+            SWP_NOSIZE = 0x0001
+            SWP_NOMOVE = 0x0002
+            SWP_SHOWWINDOW = 0x0040
+            user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+            user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+        except Exception:
+            pass
+
         return {"status": "ok", "focused": title, "hwnd": hwnd}
 
 

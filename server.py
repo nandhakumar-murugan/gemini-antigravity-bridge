@@ -1635,7 +1635,28 @@ async def drag_mouse(from_x: int, from_y: int, to_x: int, to_y: int,
         return json.dumps({"status": "error", "error": str(e)})
 
 
+@mcp.tool()
+async def capture_camera_photo(save_to_desktop: bool = False, prompt_context: str = "") -> str:
+    """
+    📷 Capture a live photo/snapshot directly from the laptop webcam/camera.
+
+    Enables Gemini Spark to see the user, their desk environment, posture, or physical activity
+    (e.g. detect if user is holding a phone, scrolling reels, studying, or away from the desk).
+
+    Args:
+        save_to_desktop: If True, also saves a copy of the photo directly to the Windows Desktop.
+        prompt_context: Optional context or question about what you want to observe (e.g. 'checking if user is scrolling phone reels or focused on laptop').
+    """
+    try:
+        from camera_vision import capture_camera_photo as _cam_snap
+        result = _cam_snap(save_to_desktop=save_to_desktop, prompt_context=prompt_context)
+        return json.dumps(result)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 
 def main():

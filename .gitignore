@@ -16,4 +16,6 @@ node_modules/
 
 *.egg-info/
 *.egg
-
+bridge_history.json
+scratch/
+~*

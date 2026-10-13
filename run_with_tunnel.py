@@ -184,6 +184,11 @@ async def head_mcp_handler(request):
     return Response(status_code=200, headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"})
 
 
+async def delete_mcp_handler(request):
+    from starlette.responses import JSONResponse
+    return JSONResponse({"status": "session_closed", "mcp": True}, status_code=200)
+
+
 def create_app() -> Starlette:
     from mcp.server.streamable_http_manager import TransportSecuritySettings
     sec_settings = TransportSecuritySettings(
@@ -200,8 +205,10 @@ def create_app() -> Starlette:
         Route("/.well-known/oauth-protected-resource", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
         Route("/.well-known/oauth-protected-resource/mcp", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
         Route("/mcp", head_mcp_handler, methods=["HEAD"]),
+        Route("/mcp", delete_mcp_handler, methods=["DELETE"]),
         Route("/mcp", streamable_endpoint, methods=["POST", "GET", "OPTIONS"]),
         Route("/sse", head_mcp_handler, methods=["HEAD"]),
+        Route("/sse", delete_mcp_handler, methods=["DELETE"]),
         Route("/sse", streamable_endpoint, methods=["POST"]),
         Route("/webhook", webhook_handler, methods=["POST"]),
         Route("/api/webhook", webhook_handler, methods=["POST"]),
