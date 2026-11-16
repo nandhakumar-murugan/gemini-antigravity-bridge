@@ -1,6 +1,6 @@
 ﻿"""Gemini Antigravity Bridge: Bidirectional MCP Bridge between Google Gemini Spark & DeepMind Antigravity."""
 
-__version__ = "1.0.1"
+__version__ = "1.4.0"
 
 from .server import mcp
 from .cli import main

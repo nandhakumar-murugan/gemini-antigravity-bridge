@@ -20,9 +20,9 @@
 [![Stars](https://img.shields.io/github/stars/nandhakumar-murugan/gemini-antigravity-bridge?color=gold&logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/stargazers)
 [![Discussions](https://img.shields.io/badge/Discussions-Join_Community-8A2BE2?logo=github)](https://github.com/nandhakumar-murugan/gemini-antigravity-bridge/discussions)
 
-**Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 24 powerful MCP tools, hardened by OpenAgentShield Zero-Trust runtime sandboxing and automatic credential redaction.**
+**Connect Google's cloud AI (Gemini Spark powered by Gemini 3.8 / 3.7) to your local agentic IDE (Antigravity) with 52 powerful MCP tools, hardened by OpenAgentShield Zero-Trust runtime sandboxing and automatic credential redaction.**
 
-[Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-24) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
+[Quick Start](#-quick-start) · [Architecture](#-architecture) · [Tools](#-available-tools-52) · [Connected Apps](#-spark-connected-apps) · [Deploy](#-deployment)
 
 </div>
 
@@ -111,11 +111,11 @@ gemini-bridge
 1. Open [Gemini Spark](https://gemini.google.com) → Settings → Connected Apps
 2. Click **"Add a custom app"**
 3. Enter your public MCP URL: `https://your-domain.ngrok-free.dev/mcp`
-4. Spark will discover all 23 tools automatically!
+4. Spark will discover all 52 tools automatically!
 
 ---
 
-## 🛠️ Available Tools (24)
+## 🛠️ Available Tools (52)
 
 ### 🔧 System Execution
 | Tool | Description |
@@ -168,6 +168,57 @@ gemini-bridge
 | `inject_message` | Inject a structured message directly into an Antigravity conversation |
 | `send_spark_to_antigravity_task` | Dispatch a full task brief from Spark to Antigravity |
 | `get_antigravity_agent_report` | Get the latest execution report for Spark to review |
+
+---
+
+
+### 🖥️ Desktop Control & Vision
+| Tool | Description |
+|---|---|
+| `take_screenshot` | 📸 Capture the full desktop screen (or a specific region) and return it as a base64-encoded PNG image. |
+| `get_screen_info` | 🖥️ Get the current screen resolution and mouse cursor position. |
+| `click_mouse` | 🖱️ Click the mouse at a position. |
+| `drag_mouse` | 🖱️ Click and drag the mouse from one position to another. |
+| `scroll_screen` | 🖱️ Scroll the mouse wheel at a specific position on screen. |
+| `press_key` | ⌨️ Press a keyboard key or hotkey combination. |
+| `type_text` | ⌨️ Type a string of text using the keyboard at the current cursor focus. |
+| `focus_window` | 🪟 FOCUS APPLICATION WINDOW. |
+| `perform_computer_task` | 🚀 MASTER COMPUTER AGENT — ALWAYS USE THIS TOOL FIRST FOR ANY USER COMPUTER WORK! |
+| `execute_action_plan` | ⚡ AUTONOMOUS COMPUTER ACTION PLAN (Single Permission Execution). |
+
+### 📷 Camera, Voice & Media
+| Tool | Description |
+|---|---|
+| `capture_camera_photo` | 📷 Capture a live photo/snapshot directly from the laptop webcam/camera. |
+
+### 🎬 Argon Reel Creation
+| Tool | Description |
+|---|---|
+| `argon_create_instagram_reel` | 🎬 Autonomous Instagram Reel & Short Creator (Argon.io). |
+| `argon_reframe_to_vertical` | 📱 Reframe horizontal (16:9) video into Instagram Reel / YouTube Short (9:16, 1080x1920). |
+| `argon_generate_subtitles` | 📝 Generate word-level synchronized short-form subtitles (.srt) using local Whisper model. |
+
+### 🤝 Multi-Agent Coordination
+| Tool | Description |
+|---|---|
+| `get_multi_agent_board` | Inspects the shared Multi-Agent Board. |
+
+### 🧩 Additional Tools
+| Tool | Description |
+|---|---|
+| `claim_agent_task` | Claims an active task on the shared Multi-Agent Bridge Board so peer agents (Google Gemini, Meta Muse, Antigravity) are... |
+| `release_agent_task` | Releases an active task on the Multi-Agent Board and broadcasts a completion handoff. |
+| `speak_to_user` | 🔊 SPEAK OUT LOUD THROUGH LAPTOP SPEAKERS (Windows SAPI5 Voice). |
+| `show_desktop_notification` | 🔔 NATIVE WINDOWS DESKTOP NOTIFICATION. |
+| `read_clipboard` | 📋 READ WINDOWS CLIPBOARD. |
+| `copy_to_clipboard` | 📋 COPY TO WINDOWS CLIPBOARD. |
+| `get_active_window` | 🔍 GET CURRENT FOREGROUND WINDOW. |
+| `maximize_window` | 🔲 MAXIMIZE APPLICATION WINDOW. |
+| `minimize_window` | ➖ MINIMIZE APPLICATION WINDOW. |
+| `close_window` | ❌ CLOSE APPLICATION WINDOW. |
+| `get_system_telemetry` | 🔋 GET LAPTOP HARDWARE TELEMETRY & BATTERY. |
+| `inspect_desktop_overview` | 🖥️ UNIFIED DESKTOP & SCREEN INSPECTOR (Astra Computer Vision). |
+| `move_mouse` | 🖱️ Move the mouse cursor to a specific pixel position on screen. |
 
 ---
 
