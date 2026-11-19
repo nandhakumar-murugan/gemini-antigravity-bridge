@@ -7,7 +7,9 @@ on the SAME port (8000) with automatic Smart Tunneling (ngrok + Cloudflare Tunne
 import os
 import sys
 import re
+import uuid
 import time
+import secrets
 import subprocess
 import webbrowser
 import threading
@@ -16,21 +18,51 @@ from datetime import datetime
 from dotenv import load_dotenv
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse, JSONResponse
 from starlette.routing import Route
-from .server import mcp
-from .dashboard import DASHBOARD_ROUTES, set_public_url
+from server import mcp
+from dashboard import DASHBOARD_ROUTES, set_public_url
 
 load_dotenv()
 
-AUTHTOKEN = os.environ.get("NGROK_AUTHTOKEN", "")
-DOMAIN = os.environ.get("NGROK_DOMAIN", "")
+# Strictly load secrets/domains from .env — NEVER hardcode credentials in source code
+AUTHTOKEN = os.environ.get("NGROK_AUTHTOKEN", "").strip()
+DOMAIN = os.environ.get("NGROK_DOMAIN", "").strip()
 PORT = 8000
 HOST = "0.0.0.0"
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+INSTANCE_ID = uuid.uuid4().hex[:12]
+TUNNEL_STATE_FILE = os.path.join(ROOT_DIR, "active_tunnel_url.txt")
+
+
+def ensure_bridge_api_key() -> str:
+    key = os.environ.get("BRIDGE_API_KEY", "").strip()
+    if not key:
+        key = f"bridge_{secrets.token_hex(24)}"
+        os.environ["BRIDGE_API_KEY"] = key
+        env_path = os.path.join(ROOT_DIR, ".env")
+        try:
+            with open(env_path, "a", encoding="utf-8") as f:
+                f.write(f"\nBRIDGE_API_KEY={key}\n")
+            print(f"[SECURITY] Generated new secure BRIDGE_API_KEY and appended to .env: {key}")
+        except Exception:
+            pass
+    return key
+
+
+BRIDGE_KEY = ensure_bridge_api_key()
 
 tunnel_process = None
+
+
+def _save_active_tunnel_url(url: str):
+    try:
+        with open(TUNNEL_STATE_FILE, "w", encoding="utf-8") as f:
+            f.write(url.strip())
+    except Exception:
+        pass
 
 
 def _cf_reader(pipe):
@@ -40,6 +72,7 @@ def _cf_reader(pipe):
         if match:
             public_url = match.group(0)
             set_public_url(public_url)
+            _save_active_tunnel_url(public_url)
             print("=" * 65)
             print("[INFO] CLOUDFLARE MCP TUNNEL IS LIVE & ROUTING!")
             print(f"[DASHBOARD]     : http://127.0.0.1:{PORT}/dashboard")
@@ -53,8 +86,9 @@ def start_tunnel():
     """Starts ngrok tunnel or falls back to Cloudflare Tunnel if ngrok is blocked."""
     global tunnel_process
 
-    # 1. Try ngrok first
-    if AUTHTOKEN:
+    # 1. Try ngrok first (unless USE_CLOUDFLARE is explicitly enabled)
+    use_cf = os.environ.get("USE_CLOUDFLARE", "").strip().lower() in ("1", "true", "yes")
+    if AUTHTOKEN and not use_cf:
         try:
             from pyngrok import ngrok, conf
             conf.get_default().auth_token = AUTHTOKEN
@@ -67,6 +101,7 @@ def start_tunnel():
             tunnel = ngrok.connect(PORT, "http", **connect_kwargs)
             public_url = tunnel.public_url.replace("http://", "https://")
             set_public_url(public_url)
+            _save_active_tunnel_url(public_url)
             print("=" * 65)
             print("[INFO] NGROK MCP TUNNEL IS LIVE!")
             print(f"[DASHBOARD]     : http://127.0.0.1:{PORT}/dashboard")
@@ -88,6 +123,7 @@ def start_tunnel():
         tunnel_process = subprocess.Popen(
             [
                 cf_path, "tunnel",
+                "--protocol", "http2",
                 "--url", f"http://127.0.0.1:{PORT}"
             ],
             stdout=subprocess.PIPE,
@@ -111,6 +147,7 @@ async def health_handler(request):
         "service": "gemini-antigravity-bridge",
         "mcp_endpoint": "/mcp",
         "version": "1.0.0",
+        "instance_id": INSTANCE_ID,
         "timestamp": datetime.now().isoformat()
     })
 
@@ -184,6 +221,57 @@ async def head_mcp_handler(request):
     return Response(status_code=200, headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"})
 
 
+async def delete_mcp_handler(request):
+    from starlette.responses import JSONResponse
+    return JSONResponse({"status": "session_closed", "mcp": True}, status_code=200)
+
+
+class BridgeAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        path = request.url.path
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
+        # Allow open public probe routes
+        if path in ["/health", "/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"]:
+            return await call_next(request)
+
+        bridge_key = os.environ.get("BRIDGE_API_KEY")
+        if not bridge_key:
+            return await call_next(request)
+
+        client_host = request.client.host if request.client else ""
+        is_local = client_host in ["127.0.0.1", "::1", "localhost"]
+        has_forwarded = bool(request.headers.get("x-forwarded-for"))
+
+        # Local dashboard UI is permitted for the laptop user
+        if is_local and not has_forwarded and (path == "/" or path.startswith("/dashboard") or path.startswith("/static")):
+            return await call_next(request)
+
+        # All MCP routes and external requests require authentication
+        protected_prefixes = ("/mcp", "/sse", "/messages", "/webhook", "/api")
+        needs_auth = has_forwarded or any(path.startswith(p) for p in protected_prefixes)
+
+        if needs_auth:
+            auth_hdr = request.headers.get("Authorization", "")
+            custom_hdr = request.headers.get("X-Bridge-Key", "")
+            param_key = request.query_params.get("key", "")
+            expected_bearer = f"Bearer {bridge_key}"
+
+            if auth_hdr != expected_bearer and custom_hdr != bridge_key and param_key != bridge_key:
+                return JSONResponse(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Missing or invalid Bridge API Key. Supply 'Authorization: Bearer <BRIDGE_API_KEY>', 'X-Bridge-Key: <key>', or '?key=<key>'.",
+                        "mcp": True
+                    },
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+
+        return await call_next(request)
+
+
 def create_app() -> Starlette:
     from mcp.server.streamable_http_manager import TransportSecuritySettings
     sec_settings = TransportSecuritySettings(
@@ -200,8 +288,10 @@ def create_app() -> Starlette:
         Route("/.well-known/oauth-protected-resource", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
         Route("/.well-known/oauth-protected-resource/mcp", oauth_resource_handler, methods=["GET", "HEAD", "OPTIONS"]),
         Route("/mcp", head_mcp_handler, methods=["HEAD"]),
+        Route("/mcp", delete_mcp_handler, methods=["DELETE"]),
         Route("/mcp", streamable_endpoint, methods=["POST", "GET", "OPTIONS"]),
         Route("/sse", head_mcp_handler, methods=["HEAD"]),
+        Route("/sse", delete_mcp_handler, methods=["DELETE"]),
         Route("/sse", streamable_endpoint, methods=["POST"]),
         Route("/webhook", webhook_handler, methods=["POST"]),
         Route("/api/webhook", webhook_handler, methods=["POST"]),
@@ -216,7 +306,8 @@ def create_app() -> Starlette:
             allow_headers=["*"],
             allow_credentials=True,
             expose_headers=["*"],
-        )
+        ),
+        Middleware(BridgeAuthMiddleware),
     ]
 
     return Starlette(

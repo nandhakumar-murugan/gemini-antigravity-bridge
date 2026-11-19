@@ -58,6 +58,41 @@ def attach_desktop():
             user32.CloseDesktop(h_desktop)
 
 
+def _run_on_input_desktop(fn):
+    """Run fn() on a fresh dedicated thread attached to the interactive input
+    desktop, mirroring _screenshot_win32_ctypes. Long-lived server threads
+    cannot SetThreadDesktop (Win32 Error 170) and attach_desktop() ignored
+    that failure, so synthetic input silently landed on the sandbox (exebox)
+    desktop instead of the user's real one. A clean thread attaches fine.
+    Returns fn()'s result; re-raises any error it hits.
+    """
+    import threading
+    import ctypes
+    outcome = {}
+
+    def _worker():
+        user32 = ctypes.windll.user32
+        h_desktop = user32.OpenInputDesktop(0, False, 0x01FF)
+        if not h_desktop:
+            h_desktop = user32.OpenDesktopW("Default", 0, False, 0x01FF)
+        try:
+            if h_desktop and not user32.SetThreadDesktop(h_desktop):
+                raise RuntimeError("SetThreadDesktop failed on input desktop")
+            outcome["result"] = fn()
+        except Exception as e:
+            outcome["error"] = e
+        finally:
+            if h_desktop:
+                user32.CloseDesktop(h_desktop)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(timeout=30)
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome.get("result")
+
+
 def _require(module_available: bool, module_name: str):
     if not module_available:
         raise RuntimeError(
@@ -177,9 +212,10 @@ def get_screen_size() -> dict:
 def get_mouse_position() -> dict:
     """Return the current mouse cursor position."""
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         x, y = pyautogui.position()
         return {"x": x, "y": y}
+    return _run_on_input_desktop(_do)
 
 
 def move_mouse(x: int, y: int, duration: float = 0.5) -> dict:
@@ -187,11 +223,12 @@ def move_mouse(x: int, y: int, duration: float = 0.5) -> dict:
     Move the mouse cursor smoothly to (x, y).
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         pyautogui.moveTo(x, y, duration=duration)
         pos = pyautogui.position()
         return {"moved_to": {"x": pos.x, "y": pos.y}, "target": {"x": x, "y": y}, "duration": duration}
+    return _run_on_input_desktop(_do)
 
 
 def click_mouse(
@@ -205,7 +242,7 @@ def click_mouse(
     Click the mouse at (x, y). If no coordinates given, clicks at current position.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         if x is not None and y is not None:
             pyautogui.click(x, y, button=button, clicks=clicks, interval=interval)
@@ -214,6 +251,7 @@ def click_mouse(
             pyautogui.click(button=button, clicks=clicks, interval=interval)
             pos = pyautogui.position()
             return {"clicked": {"x": pos.x, "y": pos.y}, "button": button, "clicks": clicks}
+    return _run_on_input_desktop(_do)
 
 
 def type_text(text: str, interval: float = 0.02) -> dict:
@@ -221,10 +259,11 @@ def type_text(text: str, interval: float = 0.02) -> dict:
     Type a string of text using the keyboard.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         pyautogui.typewrite(text, interval=interval)
         return {"typed": text, "chars": len(text)}
+    return _run_on_input_desktop(_do)
 
 
 def press_key(key: str, presses: int = 1, interval: float = 0.1) -> dict:
@@ -232,7 +271,7 @@ def press_key(key: str, presses: int = 1, interval: float = 0.1) -> dict:
     Press a keyboard key or key combination.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         if "+" in key:
             keys = [k.strip() for k in key.split("+")]
@@ -243,6 +282,7 @@ def press_key(key: str, presses: int = 1, interval: float = 0.1) -> dict:
             k = "winleft" if key.lower() == "win" else key
             pyautogui.press(k, presses=presses, interval=interval)
             return {"pressed": key, "presses": presses}
+    return _run_on_input_desktop(_do)
 
 
 def scroll_screen(x: int, y: int, clicks: int, direction: str = "up") -> dict:
@@ -250,11 +290,12 @@ def scroll_screen(x: int, y: int, clicks: int, direction: str = "up") -> dict:
     Scroll the mouse wheel at a given position.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         amount = abs(clicks) if direction == "up" else -abs(clicks)
         pyautogui.scroll(amount, x=x, y=y)
         return {"scrolled": {"x": x, "y": y}, "clicks": amount, "direction": direction}
+    return _run_on_input_desktop(_do)
 
 
 def drag_mouse(
@@ -267,7 +308,7 @@ def drag_mouse(
     Click and drag from one position to another.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    with attach_desktop():
+    def _do():
         pyautogui.FAILSAFE = False
         pyautogui.moveTo(from_x, from_y, duration=0.2)
         pyautogui.dragTo(to_x, to_y, duration=duration, button=button)
@@ -276,6 +317,7 @@ def drag_mouse(
             "duration": duration,
             "button": button,
         }
+    return _run_on_input_desktop(_do)
 
 
 

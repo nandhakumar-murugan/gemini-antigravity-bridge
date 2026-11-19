@@ -17,5 +17,9 @@ node_modules/
 *.egg-info/
 *.egg
 bridge_history.json
+active_tunnel_url.txt
+agent_coordination.json
+*.bak
+*.bak-*
 scratch/
 ~*

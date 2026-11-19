@@ -97,21 +97,37 @@ pip install -r requirements.txt
 # OR install as a CLI tool:
 pip install -e .
 
-# Configure environment
+# 🧙 Run Guided 1-Click Setup Wizard (Recommended)
+python setup_wizard.py
+# (Automatically configures your tunnel, generates secure API keys, and sets up .env)
+
+# Or manual configuration:
 cp .env.example .env
-# Edit .env with your NGROK_AUTHTOKEN and NGROK_DOMAIN
+# Edit .env with your NGROK_AUTHTOKEN and BRIDGE_API_KEY
 
 # Launch the bridge (via script or CLI)
-gemini-bridge
-# or: python run_with_tunnel.py
+python run_with_tunnel.py
+# or silent auto-recovery background service (Windows):
+start_service_now.bat
 ```
 
-### Connect to Gemini Spark
+### 🔌 Connecting Your AI Assistant
 
-1. Open [Gemini Spark](https://gemini.google.com) → Settings → Connected Apps
-2. Click **"Add a custom app"**
-3. Enter your public MCP URL: `https://your-domain.ngrok-free.dev/mcp`
-4. Spark will discover all 52 tools automatically!
+| AI Assistant | Connection Method | Endpoint Configuration |
+|---|---|---|
+| **Google Gemini Spark** | Connected Apps $\rightarrow$ Add Custom App | `https://your-domain.ngrok-free.dev/mcp?key=YOUR_BRIDGE_KEY` |
+| **Anthropic Claude Desktop** | `claude_desktop_config.json` | Remote MCP URL: `https://your-domain.ngrok-free.dev/mcp?key=YOUR_BRIDGE_KEY` |
+| **OpenAI ChatGPT** | Custom GPT $\rightarrow$ Actions | Import OpenAPI from: `https://your-domain.ngrok-free.dev/openapi.json?key=YOUR_BRIDGE_KEY` |
+| **Meta Muse / WhatsApp** | Connector Tool / Webhook | Pass `?key=YOUR_BRIDGE_KEY` or `X-Bridge-Key: YOUR_BRIDGE_KEY` |
+| **Local IDE / Antigravity** | Local MCP | `http://127.0.0.1:8000/mcp` |
+
+---
+
+## 🛡️ Security & Zero-Trust Architecture
+- **Mandatory Bridge Authentication**: All external endpoints (`/mcp`, `/sse`, `/api/*`) require `BRIDGE_API_KEY`.
+- **Zero Hardcoded Secrets**: Secrets are isolated in `.env` (strictly `.gitignore`d).
+- **Domain Collision Protection**: No hardcoded static domain fallbacks; each user reserves their own free ngrok domain or uses Cloudflare quick tunnels.
+- **Instance ID Verification**: Per-boot UUID ensures no remote machine can impersonate your bridge session.
 
 ---
 

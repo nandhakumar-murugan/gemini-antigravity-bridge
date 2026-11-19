@@ -27,6 +27,7 @@ BASE_DIR = os.path.abspath(os.getcwd())
 
 # Persistent history log file — shared between Gemini Spark and Antigravity
 HISTORY_FILE = os.path.join(BASE_DIR, "bridge_history.json")
+COORDINATION_FILE = os.path.join(BASE_DIR, "agent_coordination.json")
 
 # ─── OpenAgentShield Zero-Trust Security Gateway ─────────────────────────────
 # Based on research DOI: 10.5281/zenodo.22259022
@@ -98,6 +99,24 @@ def _save_history(history: List[Dict]):
     try:
         with open(HISTORY_FILE, "w", encoding="utf-8") as f:
             json.dump(history, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _load_coordination() -> Dict[str, Any]:
+    if os.path.exists(COORDINATION_FILE):
+        try:
+            with open(COORDINATION_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"active_tasks": {}, "handoffs": []}
+
+
+def _save_coordination(data: Dict[str, Any]):
+    try:
+        with open(COORDINATION_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
 
@@ -647,6 +666,178 @@ def get_session_notes(tag_filter: Optional[str] = None) -> str:
             f"  {'─'*60}"
         )
     return "\n".join(lines)
+
+
+# ─── Multi-Agent Swarm Coordination & Awareness ──────────────────────────────
+
+@mcp.tool()
+def claim_agent_task(agent_name: str, task_description: str, files_involved: Optional[str] = None) -> str:
+    """
+    Claims an active task on the shared Multi-Agent Bridge Board so peer agents
+    (Google Gemini, Meta Muse, Antigravity) are immediately aware of what you are working on.
+    Prevents conflicting file edits and duplicate work across connected agents.
+    """
+    coord = _load_coordination()
+    active = coord.get("active_tasks", {})
+
+    warnings = []
+    if files_involved:
+        file_set = {f.strip().lower() for f in files_involved.split(",") if f.strip()}
+        for other_agent, info in active.items():
+            if other_agent.lower() != agent_name.lower():
+                other_files = {f.strip().lower() for f in str(info.get("files", "")).split(",") if f.strip()}
+                overlap = file_set.intersection(other_files)
+                if overlap:
+                    warnings.append(f"⚠️ Conflict Alert: Agent '{other_agent}' is actively working on: {', '.join(overlap)} (Started: {info.get('started_at')})")
+
+    active[agent_name.lower()] = {
+        "agent": agent_name,
+        "task": task_description,
+        "files": files_involved or "N/A",
+        "started_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    coord["active_tasks"] = active
+    _save_coordination(coord)
+
+    save_session_note(
+        note=f"Task Claimed by [{agent_name}]: {task_description} | Files: {files_involved or 'N/A'}",
+        tag="agent_coordination",
+        source=agent_name.lower()
+    )
+
+    msg = f"[Success] Task registered on Shared Board by {agent_name} at {active[agent_name.lower()]['started_at']}."
+    if warnings:
+        msg += "\n" + "\n".join(warnings)
+    return msg
+
+
+@mcp.tool()
+def release_agent_task(agent_name: str, result_summary: str) -> str:
+    """
+    Releases an active task on the Multi-Agent Board and broadcasts a completion handoff.
+    Other agents reading the board will immediately know this task is finished and see your results.
+    """
+    coord = _load_coordination()
+    active = coord.get("active_tasks", {})
+    agent_key = agent_name.lower()
+
+    prev_task = active.pop(agent_key, None)
+    coord["active_tasks"] = active
+
+    handoff_entry = {
+        "agent": agent_name,
+        "task_was": prev_task.get("task", "General task") if prev_task else "General task",
+        "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "summary": result_summary
+    }
+    handoffs = coord.get("handoffs", [])
+    handoffs.append(handoff_entry)
+    coord["handoffs"] = handoffs[-25:]
+    _save_coordination(coord)
+
+    save_session_note(
+        note=f"Task Completed by [{agent_name}]: {result_summary}",
+        tag="agent_handoff",
+        source=agent_name.lower()
+    )
+
+    return f"[Success] Task released by {agent_name}. Handoff summary broadcasted to shared board."
+
+
+@mcp.tool()
+def get_multi_agent_board() -> str:
+    """
+    Inspects the shared Multi-Agent Board. Shows all currently active tasks across
+    Google Gemini, Meta Muse, and Antigravity, plus recent handoffs and completed milestones.
+    Call this FIRST before starting any task to remain fully aware of peer agent activities.
+    """
+    coord = _load_coordination()
+    active = coord.get("active_tasks", {})
+    handoffs = coord.get("handoffs", [])
+
+    lines = [
+        "╔═══════════════════════════════════════════════════════════════╗",
+        "║          🤖 GEMINI ANTIGRAVITY MULTI-AGENT BOARD              ║",
+        "╚═══════════════════════════════════════════════════════════════╝\n"
+    ]
+
+    lines.append(f"📡 ACTIVE AGENT TASKS IN PROGRESS ({len(active)} active):")
+    if not active:
+        lines.append("  (No agents currently have active locks or in-progress tasks. All idle.)")
+    else:
+        for ag, info in active.items():
+            lines.append(f"  • [{ag.upper()}] (Started: {info.get('started_at')})")
+            lines.append(f"    Task: {info.get('task')}")
+            lines.append(f"    Files: {info.get('files')}")
+
+    lines.append(f"\n📋 RECENT MULTI-AGENT HANDOFFS & MILESTONES (Last {min(len(handoffs), 6)}):")
+    if not handoffs:
+        lines.append("  (No recent handoffs recorded yet.)")
+    else:
+        for h in reversed(handoffs[-6:]):
+            lines.append(f"  • [{h.get('completed_at')}] [{h.get('agent', '?').upper()}]")
+            lines.append(f"    Prior Task: {h.get('task_was')}")
+            lines.append(f"    Outcome: {h.get('summary')}")
+            lines.append(f"    {'─'*55}")
+
+    return "\n".join(lines)
+
+
+# ─── Laptop Hardware & Display Controls ──────────────────────────────────────
+
+@mcp.tool()
+def set_screen_brightness(level: int) -> str:
+    """
+    Sets the physical display brightness of the laptop screen (0 to 100%).
+    Direct hardware control using Windows WMI monitor brightness methods.
+    """
+    level = max(0, min(100, int(level)))
+    cmd = f'powershell -Command "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {level})"'
+    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if res.returncode == 0:
+        return f"[Success] Laptop screen brightness set to {level}%."
+    return f"[Error] Failed to set brightness: {res.stderr.strip() or 'WMI error'}"
+
+
+@mcp.tool()
+def get_screen_brightness() -> str:
+    """
+    Gets the current physical display brightness percentage of the laptop screen.
+    """
+    cmd = 'powershell -Command "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness"'
+    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    val = res.stdout.strip()
+    if val.isdigit():
+        return f"Current laptop brightness: {val}%"
+    return f"Could not determine brightness: {res.stderr.strip() or val}"
+
+
+@mcp.tool()
+def open_system_setting(setting_name: str) -> str:
+    """
+    Opens a specific Windows Settings page directly on the laptop screen.
+    Supported setting names: 'display', 'nightlight', 'sound', 'volume', 'battery',
+    'power', 'bluetooth', 'wifi', 'network', 'notifications', 'apps', 'storage', 'windowsupdate'.
+    """
+    settings_map = {
+        "display": "ms-settings:display",
+        "nightlight": "ms-settings:nightlight",
+        "sound": "ms-settings:sound",
+        "volume": "ms-settings:sound",
+        "battery": "ms-settings:batterysaver",
+        "power": "ms-settings:powersleep",
+        "bluetooth": "ms-settings:bluetooth",
+        "wifi": "ms-settings:network-wifi",
+        "network": "ms-settings:network",
+        "notifications": "ms-settings:notifications",
+        "apps": "ms-settings:appsfeatures",
+        "storage": "ms-settings:storagesense",
+        "windowsupdate": "ms-settings:windowsupdate",
+    }
+    key = setting_name.lower().strip()
+    uri = settings_map.get(key, f"ms-settings:{key}")
+    subprocess.run(f"start {uri}", shell=True)
+    return f"[Success] Opened Windows Settings ({uri}) directly on the laptop."
 
 
 # ─── Antigravity ➔ Gemini Sync & Research Tools ──────────────────────────────
@@ -1651,6 +1842,69 @@ async def capture_camera_photo(save_to_desktop: bool = False, prompt_context: st
         from camera_vision import capture_camera_photo as _cam_snap
         result = _cam_snap(save_to_desktop=save_to_desktop, prompt_context=prompt_context)
         return json.dumps(result)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 🎬 Argon.io Video Director Tools (Powered by Gemini 4 Argon & Intel QSV)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+async def argon_create_instagram_reel(
+    video_path: str,
+    prompt: str = "Create a high-energy 30-to-45 second Instagram reel with viral hook and kinetic subtitles",
+    output_path: Optional[str] = None,
+    with_subtitles: bool = True
+) -> str:
+    """
+    🎬 Autonomous Instagram Reel & Short Creator (Argon.io).
+    Gemini 4 Argon analyzes the video, extracts the best viral hook, reframes to 9:16 vertical (1080x1920)
+    with blurred background using Intel QSV hardware acceleration, and burns synchronized Whisper subtitles.
+
+    Args:
+        video_path: Full absolute path to the input raw video (.mp4, .mov, etc.)
+        prompt: Direction instructions for Gemini 4 Argon
+        output_path: Optional custom output file path
+        with_subtitles: Whether to generate and burn kinetic subtitles automatically
+    """
+    try:
+        from argon.server import argon_create_reel
+        res = argon_create_reel(
+            video_path=video_path,
+            prompt=prompt,
+            output_path=output_path,
+            with_subtitles=with_subtitles
+        )
+        return json.dumps(res, indent=2)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def argon_reframe_to_vertical(video_path: str, output_path: Optional[str] = None) -> str:
+    """
+    📱 Reframe horizontal (16:9) video into Instagram Reel / YouTube Short (9:16, 1080x1920).
+    Fills background with blurred video while centering crisp original video on top.
+    Hardware accelerated by Intel QSV.
+    """
+    try:
+        from argon.server import argon_reframe_vertical
+        out = argon_reframe_vertical(video_path=video_path, output_path=output_path)
+        return json.dumps({"status": "success", "output_path": out})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
+async def argon_generate_subtitles(video_path: str, output_srt_path: Optional[str] = None) -> str:
+    """
+    📝 Generate word-level synchronized short-form subtitles (.srt) using local Whisper model.
+    """
+    try:
+        from argon.server import argon_generate_captions
+        out = argon_generate_captions(video_path=video_path, output_srt_path=output_srt_path)
+        return json.dumps({"status": "success", "srt_path": out})
     except Exception as e:
         return json.dumps({"status": "error", "error": str(e)})
 

@@ -26,7 +26,7 @@ dependencies = [
     "pytest>=8.0.0",
     "pyautogui>=0.9.54",
     "Pillow>=10.0.0",
-    "pywin32>=306",
+    "pywin32>=306; sys_platform == 'win32'",
 ]
 
 [project.scripts]

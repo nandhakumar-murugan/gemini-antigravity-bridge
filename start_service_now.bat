@@ -1,0 +1,6 @@
+@echo off
+echo Starting Gemini Antigravity Bridge Watchdog silently...
+wscript.exe "%~dp0launch_bridge_silent.vbs"
+timeout /t 3 /nobreak >nul
+echo [LAUNCHED] Checking status...
+call "%~dp0status_service.bat"
