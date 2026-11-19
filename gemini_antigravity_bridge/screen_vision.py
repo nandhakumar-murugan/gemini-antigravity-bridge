@@ -229,7 +229,7 @@ def move_mouse(x: int, y: int, duration: float = 0.5) -> dict:
     Move the mouse cursor smoothly to (x, y).
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
-    show_hud_status(f"🖱️ Moving cursor to ({x}, {y})...", state="mouse", timeout=2.0)
+    show_hud_status(f"🖱️ Moving cursor to ({x}, {y})...", state="mouse", timeout=2.0, pos=(x, y))
     def _do():
         pyautogui.FAILSAFE = False
         pyautogui.moveTo(x, y, duration=duration)
@@ -251,7 +251,8 @@ def click_mouse(
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
     loc = f"({x}, {y})" if x is not None and y is not None else "cursor"
     click_type = "Double-clicking" if clicks == 2 else "Clicking"
-    show_hud_status(f"🖱️ {click_type} at {loc}...", state="mouse", timeout=2.5)
+    target_pos = (x, y) if (x is not None and y is not None and x >= 0 and y >= 0) else None
+    show_hud_status(f"🖱️ {click_type} at {loc}...", state="mouse", timeout=2.5, pos=target_pos)
     def _do():
         pyautogui.FAILSAFE = False
         if x is not None and y is not None:
