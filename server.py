@@ -1827,6 +1827,30 @@ async def drag_mouse(from_x: int, from_y: int, to_x: int, to_y: int,
 
 
 @mcp.tool()
+async def show_desktop_reasoning_indicator(
+    message: str,
+    state: str = "thinking",
+    seconds: float = 4.0
+) -> str:
+    """
+    💡 Show Live Floating HUD Indicator on the user's laptop screen.
+    Displays a sleek floating on-top pill indicator (e.g. 'Thinking...', 'Thinking (12s)...', 'Clicking Edit button...').
+    Allows Gemini Spark, Meta Muse, Claude, and ChatGPT to visually communicate in real-time what they are thinking or clicking.
+
+    Args:
+        message: The status text to display (e.g. "Thinking...", "Thinking (12s)...", "Clicking 'Edit' button...").
+        state: The visual style ('thinking', 'mouse', 'typing', 'task', 'idle').
+        seconds: Display duration in seconds before auto-fading back to idle (default 4.0).
+    """
+    try:
+        from desktop_hud import show_hud_status
+        show_hud_status(message, state=state, timeout=seconds)
+        return json.dumps({"status": "ok", "displayed": message, "state": state})
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)})
+
+
+@mcp.tool()
 async def capture_camera_photo(save_to_desktop: bool = False, prompt_context: str = "") -> str:
     """
     📷 Capture a live photo/snapshot directly from the laptop webcam/camera.

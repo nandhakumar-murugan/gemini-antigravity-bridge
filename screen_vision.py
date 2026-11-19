@@ -16,6 +16,12 @@ import base64
 import time
 from typing import Optional, Tuple
 
+try:
+    from desktop_hud import show_hud_status
+except Exception:
+    def show_hud_status(text: str, state: str = "thinking", timeout: float = 3.0):
+        pass
+
 # ─── Image processing + Screenshot (PIL ImageGrab works in all Windows sessions) ─
 try:
     from PIL import Image, ImageDraw, ImageGrab
@@ -223,6 +229,7 @@ def move_mouse(x: int, y: int, duration: float = 0.5) -> dict:
     Move the mouse cursor smoothly to (x, y).
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
+    show_hud_status(f"🖱️ Moving cursor to ({x}, {y})...", state="mouse", timeout=2.0)
     def _do():
         pyautogui.FAILSAFE = False
         pyautogui.moveTo(x, y, duration=duration)
@@ -242,6 +249,9 @@ def click_mouse(
     Click the mouse at (x, y). If no coordinates given, clicks at current position.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
+    loc = f"({x}, {y})" if x is not None and y is not None else "cursor"
+    click_type = "Double-clicking" if clicks == 2 else "Clicking"
+    show_hud_status(f"🖱️ {click_type} at {loc}...", state="mouse", timeout=2.5)
     def _do():
         pyautogui.FAILSAFE = False
         if x is not None and y is not None:
@@ -259,6 +269,7 @@ def type_text(text: str, interval: float = 0.02) -> dict:
     Type a string of text using the keyboard.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
+    show_hud_status(f"⌨️ Typing: {text[:22]}...", state="typing", timeout=3.0)
     def _do():
         pyautogui.FAILSAFE = False
         pyautogui.typewrite(text, interval=interval)
@@ -271,6 +282,7 @@ def press_key(key: str, presses: int = 1, interval: float = 0.1) -> dict:
     Press a keyboard key or key combination.
     """
     _require(PYAUTOGUI_AVAILABLE, "pyautogui")
+    show_hud_status(f"⌨️ Key: {key}", state="typing", timeout=2.0)
     def _do():
         pyautogui.FAILSAFE = False
         if "+" in key:
