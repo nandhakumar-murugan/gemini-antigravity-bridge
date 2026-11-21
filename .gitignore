@@ -23,3 +23,8 @@ agent_coordination.json
 *.bak-*
 scratch/
 ~*
+swarm_overlay.pid
+swarm_overlay_heartbeat.json
+swarm_state.json
+swarm_test_out.txt
+$null

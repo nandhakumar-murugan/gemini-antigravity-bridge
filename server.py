@@ -1850,6 +1850,89 @@ async def show_desktop_reasoning_indicator(
         return json.dumps({"status": "error", "error": str(e)})
 
 
+
+# ─── Agent Swarm Tools (added 2026-11-19 by Muse) ─────────────────────
+try:
+    from . import swarm_tools as _swarm
+except ImportError:
+    import swarm_tools as _swarm
+
+
+@mcp.tool()
+async def swarm_submit_task(description: str) -> str:
+    return json.dumps(_swarm.swarm_submit_task(description))
+
+
+@mcp.tool()
+async def swarm_register_agent(agent_id: str, name: str = None, color: str = None, task_id: str = None, gui: bool = False, window: str = None) -> str:
+    return json.dumps(_swarm.swarm_register_agent(agent_id, name, color, task_id, gui, window))
+
+
+@mcp.tool()
+async def swarm_update_status(agent_id: str, state: str, current_action: str = "", progress: float = None, anchor=None) -> str:
+    return json.dumps(_swarm.swarm_update_status(agent_id, state, current_action, progress, anchor))
+
+
+@mcp.tool()
+async def swarm_get_snapshot() -> str:
+    return json.dumps(_swarm.swarm_get_snapshot())
+
+
+@mcp.tool()
+async def swarm_release_agent(agent_id: str) -> str:
+    return json.dumps(_swarm.swarm_release_agent(agent_id))
+
+
+@mcp.tool()
+async def swarm_show() -> str:
+    return json.dumps(_swarm.swarm_show())
+
+
+@mcp.tool()
+async def swarm_hide() -> str:
+    return json.dumps(_swarm.swarm_hide())
+
+
+@mcp.tool()
+async def swarm_begin_recording(output_path: str = None) -> str:
+    return json.dumps(_swarm.swarm_begin_recording(output_path))
+
+
+@mcp.tool()
+async def swarm_end_recording() -> str:
+    return json.dumps(_swarm.swarm_end_recording())
+
+
+@mcp.tool()
+async def swarm_list_windows() -> str:
+    return json.dumps(_swarm.swarm_list_windows())
+
+
+@mcp.tool()
+async def swarm_replay_start(session_log_path: str, speed: float = 1.0) -> str:
+    return json.dumps(_swarm.swarm_replay_start(session_log_path, speed))
+
+
+@mcp.tool()
+async def swarm_replay_stop() -> str:
+    return json.dumps(_swarm.swarm_replay_stop())
+
+
+@mcp.tool()
+async def swarm_get_stats() -> str:
+    return json.dumps(_swarm.swarm_get_stats())
+
+
+@mcp.tool()
+async def swarm_stop_all() -> str:
+    return json.dumps(_swarm.swarm_stop_all())
+
+
+@mcp.tool()
+async def swarm_capture_frame(path: str = None) -> str:
+    return json.dumps(_swarm.swarm_capture_frame(path))
+
+
 @mcp.tool()
 async def capture_camera_photo(save_to_desktop: bool = False, prompt_context: str = "") -> str:
     """
